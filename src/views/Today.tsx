@@ -10,9 +10,9 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
-import { useTodos, toggleComplete } from '../store/todos';
+import { useTodos, toggleComplete, updateTodo } from '../store/todos';
 import { openTask } from '../store/selection';
-import { Todo } from '../types';
+import { EnergyType, Todo } from '../types';
 import { DailyPlan, getPlan, setPlan, todayKey } from '../lib/local';
 import Icon from '../components/Icon';
 
@@ -21,39 +21,67 @@ const POOL_ID = 'planner-pool';
 
 const LIMITS: Record<Slot, number> = { big: 1, medium: 3, small: 5 };
 
-const SLOT_META: Record<
-  Slot,
-  { title: string; subtitle: string; examples: string[]; chip: string }
-> = {
+type SlotMeta = {
+  title: string;
+  subtitle: string;
+  block: string;
+  examples: string[];
+  chip: string;
+  defaultMinutes: number;
+  energy: EnergyType;
+  start: string;
+  end: string;
+  dot: string;
+};
+
+const SLOT_META: Record<Slot, SlotMeta> = {
   big: {
     title: 'The One Big Thing',
     subtitle: '2–4 hours of focused work',
+    block: 'Deep Focus · Morning',
     chip: 'Big',
     examples: [
       'Draft the Q1 budget proposal',
       "Prepare slides for Friday's client presentation",
       'Write the first section of a research report',
     ],
+    defaultMinutes: 180,
+    energy: 'deep_focus',
+    start: '08:00',
+    end: '12:00',
+    dot: 'bg-purple-500',
   },
   medium: {
     title: '3 Medium Wins',
     subtitle: '30–60 minutes each',
+    block: 'Deep Focus · Late morning',
     chip: 'Med',
     examples: [
       "Review and give feedback on a teammate's document",
       'Research vendors for the office supply order',
       "Prepare talking points for tomorrow's meeting",
     ],
+    defaultMinutes: 45,
+    energy: 'deep_focus',
+    start: '10:00',
+    end: '12:00',
+    dot: 'bg-blue-500',
   },
   small: {
     title: '5 Quick Hits',
     subtitle: '5–15 minutes each',
+    block: 'Quick Wins · Afternoon',
     chip: 'Quick',
     examples: [
       "Reply to a colleague's question about next week's deadline",
       'File an expense report',
       'Send a meeting invite for next Tuesday',
     ],
+    defaultMinutes: 10,
+    energy: 'quick_win',
+    start: '13:00',
+    end: '18:00',
+    dot: 'bg-yellow-500',
   },
 };
 
@@ -227,19 +255,40 @@ export default function Planner() {
     };
   }
 
+  function syncTimeBlock(todoId: string, slot: Slot | null) {
+    if (slot) {
+      const m = SLOT_META[slot];
+      void updateTodo(todoId, {
+        energy_type: m.energy,
+        time_block_date: date,
+        time_block_start: m.start,
+        time_block_end: m.end,
+      });
+    } else {
+      void updateTodo(todoId, {
+        time_block_date: null,
+        time_block_start: null,
+        time_block_end: null,
+      });
+    }
+  }
+
   function assignTo(slot: Slot, todoId: string) {
     const cleaned = removeFromPlan(todoId);
     if (slot === 'big') {
       setLocalPlan({ ...cleaned, bigTask: todoId });
+      syncTimeBlock(todoId, 'big');
       return;
     }
     if (slot === 'medium') {
       if (cleaned.mediumTasks.length >= LIMITS.medium) return;
       setLocalPlan({ ...cleaned, mediumTasks: [...cleaned.mediumTasks, todoId] });
+      syncTimeBlock(todoId, 'medium');
       return;
     }
     if (cleaned.smallTasks.length >= LIMITS.small) return;
     setLocalPlan({ ...cleaned, smallTasks: [...cleaned.smallTasks, todoId] });
+    syncTimeBlock(todoId, 'small');
   }
 
   function onDragStart(e: DragStartEvent) {
@@ -253,6 +302,7 @@ export default function Planner() {
     const target = String(e.over.id);
     if (target === POOL_ID) {
       setLocalPlan(removeFromPlan(todoId));
+      syncTimeBlock(todoId, null);
       return;
     }
     if (target === 'big' || target === 'medium' || target === 'small') {
@@ -284,8 +334,10 @@ export default function Planner() {
     <div className="h-full flex flex-col">
       <header className="flex items-center justify-between px-6 py-4 border-b border-zinc-800">
         <div>
-          <h1 className="text-xl font-semibold">Daily Planner</h1>
-          <p className="text-xs text-zinc-500">{formatDate(date)} · 1 Big · 3 Medium · 5 Small</p>
+          <h1 className="text-xl font-semibold">Today</h1>
+          <p className="text-xs text-zinc-500">
+            {formatDate(date)} · Deep Focus AM → Quick Wins PM
+          </p>
         </div>
       </header>
 
@@ -319,7 +371,11 @@ export default function Planner() {
                     <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-900">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
+                          <span className={`w-2 h-2 rounded-full ${meta.dot}`} />
                           <h3 className="text-sm font-semibold">{meta.title}</h3>
+                          <span className="text-[10px] uppercase tracking-wide text-zinc-500">
+                            {meta.block}
+                          </span>
                           <button
                             onClick={() => setShowExamples(isExamplesOpen ? null : sec.id)}
                             className="text-[10px] px-1.5 py-0.5 rounded-full bg-zinc-900 text-zinc-500 hover:text-white cursor-pointer transition"

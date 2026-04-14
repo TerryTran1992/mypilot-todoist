@@ -3,9 +3,9 @@ import { clearAuth, getUser } from '../lib/auth';
 import Sidebar, { View } from '../components/Sidebar';
 import QuickCapture from '../components/QuickCapture';
 import BrainDump from '../views/BrainDump';
-import Planner from '../views/Planner';
+import Today from '../views/Today';
+import Weekly from '../views/Weekly';
 import Matrix from '../views/Matrix';
-import EnergyScheduler from '../views/EnergyScheduler';
 import Delegation from '../views/Delegation';
 import Inbox from '../views/Inbox';
 import Completed from '../views/Completed';
@@ -19,7 +19,11 @@ const SIDEBAR_KEY = 'mypilot_sidebar';
 
 export default function Home({ onLogout }: { onLogout: () => void }) {
   const user = getUser();
-  const [view, setView] = useState<View>(() => (localStorage.getItem(LAST_VIEW_KEY) as View) || 'inbox');
+  const [view, setView] = useState<View>(() => {
+    const stored = localStorage.getItem(LAST_VIEW_KEY) as string | null;
+    const valid: View[] = ['brain', 'today', 'weekly', 'matrix', 'delegation', 'inbox', 'completed'];
+    return (valid.includes(stored as View) ? (stored as View) : 'today') as View;
+  });
   const [collapsed, setCollapsed] = useState<boolean>(() => localStorage.getItem(SIDEBAR_KEY) === '1');
   const online = useOnline();
   const pending = usePendingCount();
@@ -46,15 +50,15 @@ export default function Home({ onLogout }: { onLogout: () => void }) {
           break;
         case '2':
           e.preventDefault();
-          setView('planner');
+          setView('today');
           break;
         case '3':
           e.preventDefault();
-          setView('matrix');
+          setView('weekly');
           break;
         case '4':
           e.preventDefault();
-          setView('energy');
+          setView('matrix');
           break;
         case '5':
           e.preventDefault();
@@ -130,10 +134,10 @@ export default function Home({ onLogout }: { onLogout: () => void }) {
         />
 
         <main className="flex-1 min-w-0">
-          {view === 'brain' && <BrainDump onStartPlanning={() => setView('planner')} />}
-          {view === 'planner' && <Planner />}
+          {view === 'brain' && <BrainDump onStartPlanning={() => setView('weekly')} />}
+          {view === 'today' && <Today />}
+          {view === 'weekly' && <Weekly />}
           {view === 'matrix' && <Matrix />}
-          {view === 'energy' && <EnergyScheduler />}
           {view === 'delegation' && <Delegation />}
           {view === 'inbox' && <Inbox />}
           {view === 'completed' && <Completed />}

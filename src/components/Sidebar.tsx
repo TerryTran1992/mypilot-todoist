@@ -1,18 +1,18 @@
 import { useTodos } from '../store/todos';
 import Icon from './Icon';
 
-export type View = 'brain' | 'planner' | 'matrix' | 'energy' | 'delegation' | 'inbox' | 'completed';
+export type View = 'brain' | 'today' | 'weekly' | 'matrix' | 'delegation' | 'inbox' | 'completed';
 
 const items: {
   id: View;
   label: string;
-  icon: 'brain' | 'calendar' | 'grid' | 'zap' | 'users' | 'inbox' | 'check';
+  icon: 'brain' | 'calendar' | 'zap' | 'grid' | 'users' | 'inbox' | 'check';
   shortcut: string;
 }[] = [
   { id: 'brain', label: 'Brain Dump', icon: 'brain', shortcut: '⌘1' },
-  { id: 'planner', label: 'Daily Planner', icon: 'calendar', shortcut: '⌘2' },
-  { id: 'matrix', label: 'Matrix', icon: 'grid', shortcut: '⌘3' },
-  { id: 'energy', label: 'Energy', icon: 'zap', shortcut: '⌘4' },
+  { id: 'today', label: 'Today', icon: 'calendar', shortcut: '⌘2' },
+  { id: 'weekly', label: 'Weekly Planner', icon: 'zap', shortcut: '⌘3' },
+  { id: 'matrix', label: 'Matrix', icon: 'grid', shortcut: '⌘4' },
   { id: 'delegation', label: 'Delegation', icon: 'users', shortcut: '⌘5' },
   { id: 'inbox', label: 'Inbox', icon: 'inbox', shortcut: '⌘6' },
   { id: 'completed', label: 'Completed', icon: 'check', shortcut: '⌘7' },
@@ -36,9 +36,11 @@ export default function Sidebar({
   const doneCount = todos.filter((t) => t.is_completed).length;
 
   const today = new Date().toISOString().slice(0, 10);
-  const energyCount = todos.filter(
-    (t) => !t.is_completed && t.energy_type && t.time_block_date?.slice(0, 10) === today,
+  const todayCount = todos.filter(
+    (t) => !t.is_completed && t.time_block_date?.slice(0, 10) === today,
   ).length;
+
+  const weeklyCount = todos.filter((t) => !t.is_completed && !t.estimated_minutes).length;
 
   const delegationCount = todos.filter(
     (t) => t.delegated_to && t.delegation_status && t.delegation_status !== 'done',
@@ -46,9 +48,9 @@ export default function Sidebar({
 
   const counts: Record<View, number> = {
     brain: 0,
-    planner: 0,
+    today: todayCount,
+    weekly: weeklyCount,
     matrix: 0,
-    energy: energyCount,
     delegation: delegationCount,
     inbox: inboxCount,
     completed: doneCount,
