@@ -65,3 +65,34 @@ export function setPlan(date: string, plan: DailyPlan) {
   all[date] = plan;
   write(PLANNER_KEY, all);
 }
+
+/** Replace tempId with realId in matrix + all daily plans. */
+export function remapLocalId(tempId: string, realId: string) {
+  const matrix = getMatrix();
+  if (matrix[tempId]) {
+    matrix[realId] = matrix[tempId];
+    delete matrix[tempId];
+    write(MATRIX_KEY, matrix);
+  }
+
+  const plans = read<Record<string, DailyPlan>>(PLANNER_KEY, {});
+  let changed = false;
+  for (const date of Object.keys(plans)) {
+    const p = plans[date];
+    if (p.bigTask === tempId) {
+      p.bigTask = realId;
+      changed = true;
+    }
+    const m = p.mediumTasks.indexOf(tempId);
+    if (m >= 0) {
+      p.mediumTasks[m] = realId;
+      changed = true;
+    }
+    const s = p.smallTasks.indexOf(tempId);
+    if (s >= 0) {
+      p.smallTasks[s] = realId;
+      changed = true;
+    }
+  }
+  if (changed) write(PLANNER_KEY, plans);
+}

@@ -9,6 +9,7 @@ import EnergyScheduler from '../views/EnergyScheduler';
 import Inbox from '../views/Inbox';
 import Completed from '../views/Completed';
 import Icon from '../components/Icon';
+import { useOnline, usePendingCount } from '../lib/useNetwork';
 
 const LAST_VIEW_KEY = 'mypilot_last_view';
 const SIDEBAR_KEY = 'mypilot_sidebar';
@@ -17,6 +18,8 @@ export default function Home({ onLogout }: { onLogout: () => void }) {
   const user = getUser();
   const [view, setView] = useState<View>(() => (localStorage.getItem(LAST_VIEW_KEY) as View) || 'inbox');
   const [collapsed, setCollapsed] = useState<boolean>(() => localStorage.getItem(SIDEBAR_KEY) === '1');
+  const online = useOnline();
+  const pending = usePendingCount();
 
   useEffect(() => {
     localStorage.setItem(LAST_VIEW_KEY, view);
@@ -81,11 +84,7 @@ export default function Home({ onLogout }: { onLogout: () => void }) {
 
   return (
     <div className="h-full flex flex-col text-white">
-      <div
-        className={`drag shrink-0 h-10 flex items-center border-b border-zinc-900 ${
-          collapsed ? 'pl-20' : 'pl-4'
-        }`}
-      >
+      <div className="drag shrink-0 h-10 flex items-center border-b border-zinc-900 pl-20 pr-4">
         <button
           onClick={() => setCollapsed((c) => !c)}
           className="no-drag text-zinc-500 hover:text-white cursor-pointer p-1 rounded"
@@ -94,6 +93,20 @@ export default function Home({ onLogout }: { onLogout: () => void }) {
         >
           <Icon name="sidebar" size={16} />
         </button>
+        <div className="flex-1" />
+        {!online && (
+          <span className="no-drag text-xs px-2 py-0.5 rounded-full bg-amber-950/60 border border-amber-900 text-amber-300 flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+            Offline
+            {pending > 0 && <span className="text-amber-200/70">· {pending} pending</span>}
+          </span>
+        )}
+        {online && pending > 0 && (
+          <span className="no-drag text-xs px-2 py-0.5 rounded-full bg-accent/20 text-accent flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+            Syncing · {pending}
+          </span>
+        )}
       </div>
 
       <div className="flex-1 flex min-h-0">

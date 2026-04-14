@@ -75,10 +75,12 @@ ipcMain.handle('api:request', async (_e, args: {
   path: string;
   body?: unknown;
   token?: string | null;
+  cookie?: string | null;
 }) => {
-  const { method, path: urlPath, body, token } = args;
+  const { method, path: urlPath, body, token, cookie } = args;
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (token) headers.Authorization = `Bearer ${token}`;
+  if (cookie) headers.Cookie = cookie;
 
   const maxAttempts = 3;
   let lastErr: unknown;
@@ -97,7 +99,11 @@ ipcMain.handle('api:request', async (_e, args: {
       } catch {
         data = text;
       }
-      return { status: res.status, ok: res.ok, data };
+
+      // Extract Set-Cookie headers (Node fetch: getSetCookie() returns array)
+      const setCookie = (res.headers as unknown as { getSetCookie?: () => string[] }).getSetCookie?.() ?? [];
+
+      return { status: res.status, ok: res.ok, data, setCookie };
     } catch (err) {
       lastErr = err;
       if (attempt < maxAttempts) {
@@ -110,5 +116,6 @@ ipcMain.handle('api:request', async (_e, args: {
     status: 0,
     ok: false,
     data: { message: lastErr instanceof Error ? lastErr.message : 'Network error' },
+    setCookie: [],
   };
 });

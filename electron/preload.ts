@@ -1,6 +1,11 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
-export type ApiResponse = { status: number; ok: boolean; data: unknown };
+export type ApiResponse = {
+  status: number;
+  ok: boolean;
+  data: unknown;
+  setCookie: string[];
+};
 
 contextBridge.exposeInMainWorld('api', {
   request: (args: {
@@ -8,5 +13,6 @@ contextBridge.exposeInMainWorld('api', {
     path: string;
     body?: unknown;
     token?: string | null;
+    cookie?: string | null;
   }): Promise<ApiResponse> => ipcRenderer.invoke('api:request', args),
 });
