@@ -1,0 +1,11 @@
+node_modules
+dist
+dist-electron
+release
+.env
+.env.local
+*.log
+.DS_Store
+*.tsbuildinfo
+vite.config.d.ts
+vite.config.js
