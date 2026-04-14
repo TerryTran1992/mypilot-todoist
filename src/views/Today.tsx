@@ -219,6 +219,8 @@ export default function Planner() {
   const [plan, setLocalPlan] = useState<DailyPlan>(() => getPlan(date));
   const [dragId, setDragId] = useState<string | null>(null);
   const [showExamples, setShowExamples] = useState<Slot | null>(null);
+  const [filterSlot, setFilterSlot] = useState<Slot | null>(null);
+  const [search, setSearch] = useState('');
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
   useEffect(() => {
@@ -248,13 +250,22 @@ export default function Planner() {
     return s;
   }, [plan]);
 
-  const pool = useMemo(
+  const allLabeledPool = useMemo(
     () =>
       todos.filter(
         (t) => !t.is_completed && !assignedIds.has(t.id) && !!t.estimated_minutes,
       ),
     [todos, assignedIds],
   );
+
+  const pool = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return allLabeledPool.filter((t) => {
+      if (filterSlot && suggestedSlot(t.estimated_minutes) !== filterSlot) return false;
+      if (q && !t.title.toLowerCase().includes(q)) return false;
+      return true;
+    });
+  }, [allLabeledPool, filterSlot, search]);
 
   const unlabeledCount = useMemo(
     () => todos.filter((t) => !t.is_completed && !t.estimated_minutes).length,
@@ -394,7 +405,17 @@ export default function Planner() {
                     id={sec.id}
                     className="bg-zinc-950 border border-zinc-900 rounded-xl"
                   >
-                    <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-900">
+                    <div
+                      className={`flex items-center justify-between px-4 py-3 border-b border-zinc-900 cursor-pointer transition ${
+                        filterSlot === sec.id ? 'bg-accent/5' : 'hover:bg-zinc-900/40'
+                      }`}
+                      onClick={() => setFilterSlot(filterSlot === sec.id ? null : sec.id)}
+                      title={
+                        filterSlot === sec.id
+                          ? 'Click to clear Unplanned filter'
+                          : `Click to show only ${meta.chip} tasks in Unplanned`
+                      }
+                    >
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <span className={`w-2 h-2 rounded-full ${meta.dot}`} />
@@ -402,8 +423,16 @@ export default function Planner() {
                           <span className="text-[10px] uppercase tracking-wide text-zinc-500">
                             {meta.block}
                           </span>
+                          {filterSlot === sec.id && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-accent text-black">
+                              filtered
+                            </span>
+                          )}
                           <button
-                            onClick={() => setShowExamples(isExamplesOpen ? null : sec.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setShowExamples(isExamplesOpen ? null : sec.id);
+                            }}
                             className="text-[10px] px-1.5 py-0.5 rounded-full bg-zinc-900 text-zinc-500 hover:text-white cursor-pointer transition"
                             title="Show examples"
                           >
@@ -466,13 +495,55 @@ export default function Planner() {
               id={POOL_ID}
               className="w-72 shrink-0 border-l border-zinc-900 bg-zinc-950 flex flex-col"
             >
-              <div className="px-4 py-3 border-b border-zinc-900">
-                <h3 className="text-sm font-semibold">Unplanned</h3>
-                <p className="text-xs text-zinc-500">
-                  {pool.length} labeled · drag, or tap Big / Med / Quick
-                </p>
+              <div className="px-4 py-3 border-b border-zinc-900 space-y-2">
+                <div className="flex items-baseline justify-between">
+                  <h3 className="text-sm font-semibold">Unplanned</h3>
+                  <span className="text-xs text-zinc-500">
+                    {pool.length}
+                    {(filterSlot || search) && allLabeledPool.length !== pool.length && (
+                      <span className="text-zinc-600"> / {allLabeledPool.length}</span>
+                    )}
+                  </span>
+                </div>
+                <div className="relative">
+                  <Icon
+                    name="search"
+                    size={12}
+                    className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-500"
+                  />
+                  <input
+                    data-search-input
+                    type="text"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Search tasks…"
+                    className="w-full pl-7 pr-7 py-1 text-xs bg-zinc-900 border border-zinc-800 rounded focus:border-accent focus:outline-none"
+                  />
+                  {search && (
+                    <button
+                      onClick={() => setSearch('')}
+                      className="absolute right-1.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white cursor-pointer p-0.5"
+                      aria-label="Clear search"
+                    >
+                      <Icon name="x" size={11} />
+                    </button>
+                  )}
+                </div>
+                {filterSlot && (
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-accent text-black">
+                      {SLOT_META[filterSlot].chip} only
+                    </span>
+                    <button
+                      onClick={() => setFilterSlot(null)}
+                      className="text-[10px] text-zinc-500 hover:text-white cursor-pointer"
+                    >
+                      clear
+                    </button>
+                  </div>
+                )}
                 {unlabeledCount > 0 && (
-                  <p className="text-[11px] text-amber-400 mt-1">
+                  <p className="text-[11px] text-amber-400">
                     {unlabeledCount} task{unlabeledCount === 1 ? '' : 's'} need sizing in Weekly (⌘3).
                   </p>
                 )}
@@ -480,7 +551,9 @@ export default function Planner() {
               <div className="flex-1 overflow-y-auto p-3 space-y-2">
                 {pool.length === 0 ? (
                   <p className="text-xs text-zinc-600 italic">
-                    {unlabeledCount > 0
+                    {filterSlot || search
+                      ? 'No matches.'
+                      : unlabeledCount > 0
                       ? 'Nothing labeled left. Open Weekly Planner (⌘3) to size your tasks.'
                       : 'All planned.'}
                   </p>
