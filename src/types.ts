@@ -1,4 +1,4 @@
-export type EnergyType = 'deep_focus' | 'quick_win' | 'people' | 'personal';
+export type EnergyType = 'deep_focus' | 'quick_win';
 export type Category = 'work' | 'personal' | 'family' | 'health' | 'learning';
 export type Priority = 'low' | 'medium' | 'high' | 'urgent';
 
@@ -7,7 +7,6 @@ export type Todo = {
   title: string;
   content?: string | null;
   priority: Priority;
-  status: 'todo' | 'doing' | 'done';
   is_completed: boolean;
   is_pinned: boolean;
   created_at: string;

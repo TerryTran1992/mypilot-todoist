@@ -7,9 +7,7 @@ import Icon from './Icon';
 const PRIORITIES: Priority[] = ['urgent', 'high', 'medium', 'low'];
 const ENERGIES: { id: EnergyType; label: string }[] = [
   { id: 'deep_focus', label: 'Deep Focus' },
-  { id: 'people', label: 'People' },
   { id: 'quick_win', label: 'Quick Win' },
-  { id: 'personal', label: 'Personal' },
 ];
 const CATEGORIES: Category[] = ['work', 'personal', 'family', 'health', 'learning'];
 
@@ -197,21 +195,6 @@ function Body({ todo }: { todo: Todo }) {
                 ? 'bg-zinc-700 text-white'
                 : 'bg-zinc-800 text-zinc-300'
             }
-          />
-        </Field>
-
-        <Field label="Status">
-          <Pills
-            options={['todo', 'doing', 'done'] as const}
-            value={todo.status}
-            onChange={(v) =>
-              patch({
-                status: v,
-                is_completed: v === 'done',
-                completed_at: v === 'done' ? new Date().toISOString() : null,
-              })
-            }
-            color={() => 'bg-zinc-800 text-white'}
           />
         </Field>
 

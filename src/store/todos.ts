@@ -46,7 +46,6 @@ function optimisticTodo(input: { title: string; priority?: Todo['priority'] }): 
     id: tempId(),
     title: input.title,
     priority: input.priority ?? 'medium',
-    status: 'todo',
     is_completed: false,
     is_pinned: false,
     created_at: new Date().toISOString(),
@@ -167,7 +166,6 @@ export async function toggleComplete(t: Todo) {
   const nextCompleted = !t.is_completed;
   return updateTodo(t.id, {
     is_completed: nextCompleted,
-    status: nextCompleted ? 'done' : 'todo',
     completed_at: nextCompleted ? new Date().toISOString() : null,
   });
 }

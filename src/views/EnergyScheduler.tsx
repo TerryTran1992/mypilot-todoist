@@ -16,7 +16,7 @@ import { EnergyType, Todo } from '../types';
 import Icon from '../components/Icon';
 
 type Block = {
-  id: 'morning' | 'midday' | 'afternoon' | 'evening';
+  id: 'deep' | 'quick';
   label: string;
   energy: EnergyType;
   hint: string;
@@ -28,44 +28,24 @@ type Block = {
 
 const BLOCKS: Block[] = [
   {
-    id: 'morning',
-    label: 'Morning',
+    id: 'deep',
+    label: 'Deep Focus',
     energy: 'deep_focus',
-    hint: 'Deep work, hard decisions, strategy',
+    hint: 'Hard problems, strategic thinking, anything that needs uninterrupted concentration',
     start: '08:00',
     end: '12:00',
-    accent: 'border-l-red-500',
-    dot: 'bg-red-500',
-  },
-  {
-    id: 'midday',
-    label: 'Midday',
-    energy: 'people',
-    hint: 'Meetings, reviews, collaboration',
-    start: '12:00',
-    end: '15:00',
-    accent: 'border-l-yellow-500',
-    dot: 'bg-yellow-500',
-  },
-  {
-    id: 'afternoon',
-    label: 'Afternoon',
-    energy: 'quick_win',
-    hint: 'Admin, emails, approvals',
-    start: '15:00',
-    end: '18:00',
-    accent: 'border-l-sky-500',
-    dot: 'bg-sky-500',
-  },
-  {
-    id: 'evening',
-    label: 'Evening',
-    energy: 'personal',
-    hint: 'Planning tomorrow, light reading, reflection',
-    start: '18:00',
-    end: '22:00',
     accent: 'border-l-purple-500',
     dot: 'bg-purple-500',
+  },
+  {
+    id: 'quick',
+    label: 'Quick Wins',
+    energy: 'quick_win',
+    hint: 'Sub-15-min tasks: replies, approvals, small decisions',
+    start: '13:00',
+    end: '18:00',
+    accent: 'border-l-yellow-500',
+    dot: 'bg-yellow-500',
   },
 ];
 
@@ -78,10 +58,7 @@ function todayKey() {
 
 function currentBlockId(): Block['id'] {
   const h = new Date().getHours();
-  if (h < 12) return 'morning';
-  if (h < 15) return 'midday';
-  if (h < 18) return 'afternoon';
-  return 'evening';
+  return h < 12 ? 'deep' : 'quick';
 }
 
 function DraggableTodo({ t }: { t: Todo }) {
@@ -146,10 +123,8 @@ export default function EnergyScheduler() {
 
   const { byBlock, unscheduled } = useMemo(() => {
     const byBlock: Record<Block['id'], Todo[]> = {
-      morning: [],
-      midday: [],
-      afternoon: [],
-      evening: [],
+      deep: [],
+      quick: [],
     };
     const unscheduled: Todo[] = [];
 
