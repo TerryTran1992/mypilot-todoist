@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTodos, updateTodo, deleteTodo, toggleComplete } from '../store/todos';
 import { closeTask, useSelectedId } from '../store/selection';
-import { Category, EnergyType, Priority, Todo } from '../types';
+import api, { ApiError, NetworkError } from '../lib/api';
+import { isTempId } from '../lib/sync';
+import { Category, EnergyType, Priority, Todo, TodoComment } from '../types';
 import Icon from './Icon';
 
 const PRIORITIES: Priority[] = ['urgent', 'high', 'medium', 'low'];
@@ -134,24 +136,13 @@ function Body({ todo }: { todo: Todo }) {
           </span>
           {todo.is_completed ? 'Completed' : 'Mark complete'}
         </button>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => patch({ is_pinned: !todo.is_pinned })}
-            className={`px-2 py-1 text-xs rounded cursor-pointer transition ${
-              todo.is_pinned ? 'bg-amber-900/40 text-amber-300' : 'text-zinc-500 hover:text-white'
-            }`}
-            title="Pin"
-          >
-            {todo.is_pinned ? '★ Pinned' : '☆ Pin'}
-          </button>
-          <button
-            onClick={closeTask}
-            className="text-zinc-500 hover:text-white p-1 cursor-pointer"
-            aria-label="Close"
-          >
-            <Icon name="x" size={16} />
-          </button>
-        </div>
+        <button
+          onClick={closeTask}
+          className="text-zinc-500 hover:text-white p-1 cursor-pointer"
+          aria-label="Close"
+        >
+          <Icon name="x" size={16} />
+        </button>
       </header>
 
       <div className="flex-1 overflow-y-auto p-5 space-y-5">
@@ -256,6 +247,8 @@ function Body({ todo }: { todo: Todo }) {
           <p>Created · {fmtDateTime(todo.created_at)}</p>
           {todo.completed_at && <p>Completed · {fmtDateTime(todo.completed_at)}</p>}
         </div>
+
+        <Comments todoId={todo.id} />
       </div>
 
       <footer className="px-5 py-3 border-t border-zinc-900 flex justify-between items-center">
@@ -274,6 +267,132 @@ function Body({ todo }: { todo: Todo }) {
         </button>
       </footer>
     </>
+  );
+}
+
+function relativeTime(iso: string) {
+  const diff = Date.now() - new Date(iso).getTime();
+  const min = Math.round(diff / 60000);
+  if (min < 1) return 'just now';
+  if (min < 60) return `${min}m ago`;
+  const hr = Math.round(min / 60);
+  if (hr < 24) return `${hr}h ago`;
+  const d = Math.round(hr / 24);
+  if (d < 7) return `${d}d ago`;
+  return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
+function Comments({ todoId }: { todoId: string }) {
+  const [items, setItems] = useState<TodoComment[] | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [draft, setDraft] = useState('');
+  const [posting, setPosting] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const isTemp = isTempId(todoId);
+
+  useEffect(() => {
+    if (isTemp) {
+      setItems([]);
+      return;
+    }
+    let cancelled = false;
+    setLoading(true);
+    setErr(null);
+    api
+      .get<TodoComment[]>(`/todos/${todoId}/comments`)
+      .then((data) => {
+        if (!cancelled) setItems(data);
+      })
+      .catch((e) => {
+        if (!cancelled) {
+          if (e instanceof NetworkError) setErr('Comments load when you reconnect.');
+          else if (e instanceof ApiError) setErr(e.message);
+          else setErr('Failed to load comments');
+          setItems([]);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [todoId, isTemp]);
+
+  async function handlePost(e: React.FormEvent) {
+    e.preventDefault();
+    const content = draft.trim();
+    if (!content || isTemp) return;
+    setPosting(true);
+    setErr(null);
+    try {
+      const created = await api.post<TodoComment>(`/todos/${todoId}/comments`, { content });
+      setItems((prev) => [...(prev ?? []), created]);
+      setDraft('');
+    } catch (e) {
+      if (e instanceof NetworkError) setErr('Offline — try again when reconnected.');
+      else if (e instanceof ApiError) setErr(e.message);
+      else setErr('Failed to post');
+    } finally {
+      setPosting(false);
+    }
+  }
+
+  return (
+    <section className="pt-4 border-t border-zinc-900">
+      <p className="text-[11px] uppercase tracking-wide text-zinc-500 mb-2">
+        Comments {items && items.length > 0 && <span className="text-zinc-600">· {items.length}</span>}
+      </p>
+
+      {isTemp ? (
+        <p className="text-xs text-zinc-600 italic">Save the task first to add comments.</p>
+      ) : loading && !items ? (
+        <p className="text-xs text-zinc-600">Loading…</p>
+      ) : items && items.length === 0 ? (
+        <p className="text-xs text-zinc-600 italic mb-3">No comments yet.</p>
+      ) : (
+        <ul className="space-y-3 mb-3">
+          {items?.map((c) => (
+            <li key={c.id} className="text-sm">
+              <div className="flex items-baseline gap-2 mb-0.5">
+                <span className="text-zinc-300 font-medium">{c.user_name ?? 'You'}</span>
+                <span className="text-[11px] text-zinc-600">{relativeTime(c.created_at)}</span>
+              </div>
+              <p className="text-zinc-200 whitespace-pre-wrap break-words">{c.content}</p>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {!isTemp && (
+        <form onSubmit={handlePost} className="space-y-2">
+          <textarea
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                e.preventDefault();
+                void handlePost(e);
+              }
+            }}
+            rows={2}
+            placeholder="Add a comment…  (⌘↵ to post)"
+            className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm focus:border-accent focus:outline-none resize-none"
+          />
+          {err && <p className="text-xs text-red-400">{err}</p>}
+          <div className="flex justify-end">
+            <button
+              type="submit"
+              disabled={posting || !draft.trim()}
+              className="px-3 py-1 text-xs bg-accent hover:bg-accent/90 disabled:opacity-40 disabled:cursor-not-allowed text-black font-medium rounded cursor-pointer transition"
+            >
+              {posting ? 'Posting…' : 'Post'}
+            </button>
+          </div>
+        </form>
+      )}
+    </section>
   );
 }
 
