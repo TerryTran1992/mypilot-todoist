@@ -123,6 +123,13 @@ function Card({ t, onToggle }: { t: Todo; onToggle: (t: Todo) => void }) {
   );
 }
 
+function suggestedSlot(minutes: number | null | undefined): Slot {
+  const m = minutes ?? 0;
+  if (m >= 90) return 'big';
+  if (m >= 30) return 'medium';
+  return 'small';
+}
+
 function PoolCard({
   t,
   onAssign,
@@ -133,6 +140,7 @@ function PoolCard({
   capacity: Record<Slot, boolean>;
 }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: t.id });
+  const suggested = suggestedSlot(t.estimated_minutes);
   return (
     <div
       ref={setNodeRef}
@@ -152,19 +160,29 @@ function PoolCard({
         <EstimateBadge minutes={t.estimated_minutes} />
       </div>
       <div className="flex border-t border-zinc-800 divide-x divide-zinc-800">
-        {(['big', 'medium', 'small'] as Slot[]).map((slot) => (
-          <button
-            key={slot}
-            onClick={() => onAssign(slot)}
-            disabled={!capacity[slot]}
-            title={
-              capacity[slot] ? `Add to ${SLOT_META[slot].title}` : `${SLOT_META[slot].title} is full`
-            }
-            className="flex-1 text-[10px] py-1 text-zinc-400 hover:bg-zinc-800 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition"
-          >
-            {SLOT_META[slot].chip}
-          </button>
-        ))}
+        {(['big', 'medium', 'small'] as Slot[]).map((slot) => {
+          const isSuggested = slot === suggested;
+          const enabled = capacity[slot];
+          return (
+            <button
+              key={slot}
+              onClick={() => onAssign(slot)}
+              disabled={!enabled}
+              title={
+                enabled
+                  ? `Add to ${SLOT_META[slot].title}${isSuggested ? ' (suggested)' : ''}`
+                  : `${SLOT_META[slot].title} is full`
+              }
+              className={`flex-1 text-[10px] py-1 cursor-pointer transition disabled:opacity-30 disabled:cursor-not-allowed ${
+                isSuggested && enabled
+                  ? 'bg-accent/15 text-accent hover:bg-accent/25'
+                  : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
+              }`}
+            >
+              {SLOT_META[slot].chip}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
@@ -231,8 +249,16 @@ export default function Planner() {
   }, [plan]);
 
   const pool = useMemo(
-    () => todos.filter((t) => !t.is_completed && !assignedIds.has(t.id)),
+    () =>
+      todos.filter(
+        (t) => !t.is_completed && !assignedIds.has(t.id) && !!t.estimated_minutes,
+      ),
     [todos, assignedIds],
+  );
+
+  const unlabeledCount = useMemo(
+    () => todos.filter((t) => !t.is_completed && !t.estimated_minutes).length,
+    [todos],
   );
 
   const onToggle = useCallback(
@@ -443,12 +469,21 @@ export default function Planner() {
               <div className="px-4 py-3 border-b border-zinc-900">
                 <h3 className="text-sm font-semibold">Unplanned</h3>
                 <p className="text-xs text-zinc-500">
-                  {pool.length} task{pool.length === 1 ? '' : 's'} · drag, or tap Big / Med / Quick
+                  {pool.length} labeled · drag, or tap Big / Med / Quick
                 </p>
+                {unlabeledCount > 0 && (
+                  <p className="text-[11px] text-amber-400 mt-1">
+                    {unlabeledCount} task{unlabeledCount === 1 ? '' : 's'} need sizing in Weekly (⌘3).
+                  </p>
+                )}
               </div>
               <div className="flex-1 overflow-y-auto p-3 space-y-2">
                 {pool.length === 0 ? (
-                  <p className="text-xs text-zinc-600 italic">All planned.</p>
+                  <p className="text-xs text-zinc-600 italic">
+                    {unlabeledCount > 0
+                      ? 'Nothing labeled left. Open Weekly Planner (⌘3) to size your tasks.'
+                      : 'All planned.'}
+                  </p>
                 ) : (
                   pool.map((t) => (
                     <PoolCard
