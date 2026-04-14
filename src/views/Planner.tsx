@@ -21,6 +21,48 @@ const POOL_ID = 'planner-pool';
 
 const LIMITS: Record<Slot, number> = { big: 1, medium: 3, small: 5 };
 
+const SLOT_META: Record<
+  Slot,
+  { title: string; subtitle: string; examples: string[]; chip: string }
+> = {
+  big: {
+    title: 'The One Big Thing',
+    subtitle: '2–4 hours of focused work',
+    chip: 'Big',
+    examples: [
+      'Draft the Q1 budget proposal',
+      "Prepare slides for Friday's client presentation",
+      'Write the first section of a research report',
+    ],
+  },
+  medium: {
+    title: '3 Medium Wins',
+    subtitle: '30–60 minutes each',
+    chip: 'Med',
+    examples: [
+      "Review and give feedback on a teammate's document",
+      'Research vendors for the office supply order',
+      "Prepare talking points for tomorrow's meeting",
+    ],
+  },
+  small: {
+    title: '5 Quick Hits',
+    subtitle: '5–15 minutes each',
+    chip: 'Quick',
+    examples: [
+      "Reply to a colleague's question about next week's deadline",
+      'File an expense report',
+      'Send a meeting invite for next Tuesday',
+    ],
+  },
+};
+
+function EstimateBadge({ minutes }: { minutes?: number | null }) {
+  if (!minutes) return null;
+  const label = minutes >= 60 ? `${(minutes / 60).toFixed(minutes % 60 === 0 ? 0 : 1)}h` : `${minutes}m`;
+  return <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400">{label}</span>;
+}
+
 function Card({ t, onToggle }: { t: Todo; onToggle: (t: Todo) => void }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: t.id });
   return (
@@ -48,6 +90,54 @@ function Card({ t, onToggle }: { t: Todo; onToggle: (t: Todo) => void }) {
       >
         {t.title}
       </span>
+      <EstimateBadge minutes={t.estimated_minutes} />
+    </div>
+  );
+}
+
+function PoolCard({
+  t,
+  onAssign,
+  capacity,
+}: {
+  t: Todo;
+  onAssign: (slot: Slot) => void;
+  capacity: Record<Slot, boolean>;
+}) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: t.id });
+  return (
+    <div
+      ref={setNodeRef}
+      className={`bg-zinc-900 border border-zinc-800 rounded-lg text-sm overflow-hidden ${
+        isDragging ? 'opacity-30' : ''
+      }`}
+    >
+      <div className="flex items-center gap-2 px-3 py-2">
+        <span
+          {...listeners}
+          {...attributes}
+          onClick={() => openTask(t.id)}
+          className="flex-1 truncate cursor-pointer select-none text-zinc-100 hover:text-accent transition"
+        >
+          {t.title}
+        </span>
+        <EstimateBadge minutes={t.estimated_minutes} />
+      </div>
+      <div className="flex border-t border-zinc-800 divide-x divide-zinc-800">
+        {(['big', 'medium', 'small'] as Slot[]).map((slot) => (
+          <button
+            key={slot}
+            onClick={() => onAssign(slot)}
+            disabled={!capacity[slot]}
+            title={
+              capacity[slot] ? `Add to ${SLOT_META[slot].title}` : `${SLOT_META[slot].title} is full`
+            }
+            className="flex-1 text-[10px] py-1 text-zinc-400 hover:bg-zinc-800 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition"
+          >
+            {SLOT_META[slot].chip}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
@@ -82,6 +172,7 @@ export default function Planner() {
   const [date] = useState(todayKey());
   const [plan, setLocalPlan] = useState<DailyPlan>(() => getPlan(date));
   const [dragId, setDragId] = useState<string | null>(null);
+  const [showExamples, setShowExamples] = useState<Slot | null>(null);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
   useEffect(() => {
@@ -136,6 +227,21 @@ export default function Planner() {
     };
   }
 
+  function assignTo(slot: Slot, todoId: string) {
+    const cleaned = removeFromPlan(todoId);
+    if (slot === 'big') {
+      setLocalPlan({ ...cleaned, bigTask: todoId });
+      return;
+    }
+    if (slot === 'medium') {
+      if (cleaned.mediumTasks.length >= LIMITS.medium) return;
+      setLocalPlan({ ...cleaned, mediumTasks: [...cleaned.mediumTasks, todoId] });
+      return;
+    }
+    if (cleaned.smallTasks.length >= LIMITS.small) return;
+    setLocalPlan({ ...cleaned, smallTasks: [...cleaned.smallTasks, todoId] });
+  }
+
   function onDragStart(e: DragStartEvent) {
     setDragId(String(e.active.id));
   }
@@ -144,35 +250,28 @@ export default function Planner() {
     setDragId(null);
     if (!e.over) return;
     const todoId = String(e.active.id);
-    const target = String(e.over.id) as Slot | typeof POOL_ID;
-
-    const cleaned = removeFromPlan(todoId);
-
+    const target = String(e.over.id);
     if (target === POOL_ID) {
-      setLocalPlan(cleaned);
+      setLocalPlan(removeFromPlan(todoId));
       return;
     }
-    if (target === 'big') {
-      setLocalPlan({ ...cleaned, bigTask: todoId });
-      return;
-    }
-    if (target === 'medium') {
-      if (cleaned.mediumTasks.length >= LIMITS.medium) return;
-      setLocalPlan({ ...cleaned, mediumTasks: [...cleaned.mediumTasks, todoId] });
-      return;
-    }
-    if (target === 'small') {
-      if (cleaned.smallTasks.length >= LIMITS.small) return;
-      setLocalPlan({ ...cleaned, smallTasks: [...cleaned.smallTasks, todoId] });
+    if (target === 'big' || target === 'medium' || target === 'small') {
+      assignTo(target, todoId);
     }
   }
 
+  const capacity: Record<Slot, boolean> = {
+    big: !plan.bigTask,
+    medium: plan.mediumTasks.length < LIMITS.medium,
+    small: plan.smallTasks.length < LIMITS.small,
+  };
+
   const dragging = dragId ? byId.get(dragId) : null;
 
-  const sections: { id: Slot; title: string; subtitle: string; ids: string[] }[] = [
-    { id: 'big', title: 'The One Big Thing', subtitle: 'Your highest-leverage task today', ids: plan.bigTask ? [plan.bigTask] : [] },
-    { id: 'medium', title: '3 Medium Wins', subtitle: 'Meaningful progress', ids: plan.mediumTasks },
-    { id: 'small', title: '5 Quick Hits', subtitle: 'Fast checkboxes', ids: plan.smallTasks },
+  const sections: { id: Slot; ids: string[] }[] = [
+    { id: 'big', ids: plan.bigTask ? [plan.bigTask] : [] },
+    { id: 'medium', ids: plan.mediumTasks },
+    { id: 'small', ids: plan.smallTasks },
   ];
 
   function progress(ids: string[]) {
@@ -206,9 +305,11 @@ export default function Planner() {
           <div className="flex-1 flex min-h-0">
             <div className="flex-1 overflow-y-auto p-6 space-y-4">
               {sections.map((sec) => {
+                const meta = SLOT_META[sec.id];
                 const limit = LIMITS[sec.id];
                 const { done, total } = progress(sec.ids);
                 const pct = limit > 0 ? (total / limit) * 100 : 0;
+                const isExamplesOpen = showExamples === sec.id;
                 return (
                   <Drop
                     key={sec.id}
@@ -216,9 +317,18 @@ export default function Planner() {
                     className="bg-zinc-950 border border-zinc-900 rounded-xl"
                   >
                     <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-900">
-                      <div>
-                        <h3 className="text-sm font-semibold">{sec.title}</h3>
-                        <p className="text-xs text-zinc-500">{sec.subtitle}</p>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-sm font-semibold">{meta.title}</h3>
+                          <button
+                            onClick={() => setShowExamples(isExamplesOpen ? null : sec.id)}
+                            className="text-[10px] px-1.5 py-0.5 rounded-full bg-zinc-900 text-zinc-500 hover:text-white cursor-pointer transition"
+                            title="Show examples"
+                          >
+                            {isExamplesOpen ? 'hide' : 'examples'}
+                          </button>
+                        </div>
+                        <p className="text-xs text-zinc-500">{meta.subtitle}</p>
                       </div>
                       <div className="text-right">
                         <p className="text-xs text-zinc-500">
@@ -232,9 +342,20 @@ export default function Planner() {
                         </div>
                       </div>
                     </div>
+                    {isExamplesOpen && (
+                      <ul className="px-4 py-2 border-b border-zinc-900 bg-zinc-900/30 space-y-0.5">
+                        {meta.examples.map((ex) => (
+                          <li key={ex} className="text-xs text-zinc-400">
+                            · {ex}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                     <div className="p-3 space-y-2 min-h-16">
                       {sec.ids.length === 0 ? (
-                        <p className="text-xs text-zinc-600 italic">Drop a task here</p>
+                        <p className="text-xs text-zinc-600 italic">
+                          Drag a task here, or use the {meta.chip} button on a card in the Unplanned column.
+                        </p>
                       ) : (
                         sec.ids.map((id) => {
                           const t = byId.get(id);
@@ -266,14 +387,21 @@ export default function Planner() {
               <div className="px-4 py-3 border-b border-zinc-900">
                 <h3 className="text-sm font-semibold">Unplanned</h3>
                 <p className="text-xs text-zinc-500">
-                  {pool.length} task{pool.length === 1 ? '' : 's'}
+                  {pool.length} task{pool.length === 1 ? '' : 's'} · drag, or tap Big / Med / Quick
                 </p>
               </div>
               <div className="flex-1 overflow-y-auto p-3 space-y-2">
                 {pool.length === 0 ? (
                   <p className="text-xs text-zinc-600 italic">All planned.</p>
                 ) : (
-                  pool.map((t) => <Card key={t.id} t={t} onToggle={onToggle} />)
+                  pool.map((t) => (
+                    <PoolCard
+                      key={t.id}
+                      t={t}
+                      capacity={capacity}
+                      onAssign={(slot) => assignTo(slot, t.id)}
+                    />
+                  ))
                 )}
               </div>
             </Drop>
