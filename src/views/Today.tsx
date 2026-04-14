@@ -13,7 +13,7 @@ import {
 import { useTodos, toggleComplete, updateTodo } from '../store/todos';
 import { openTask } from '../store/selection';
 import { EnergyType, Todo } from '../types';
-import { DailyPlan, getPlan, setPlan, todayKey } from '../lib/local';
+import { DailyPlan, getPlan, setPlan, todayKey, tomorrowKey } from '../lib/local';
 import Icon from '../components/Icon';
 
 type Slot = 'big' | 'medium' | 'small';
@@ -215,8 +215,27 @@ function formatDate(key: string) {
 
 export default function Planner() {
   const { todos, loading, error, setError } = useTodos();
-  const [date] = useState(todayKey());
-  const [plan, setLocalPlan] = useState<DailyPlan>(() => getPlan(date));
+  const [day, setDay] = useState<'today' | 'tomorrow'>('today');
+  // Keep date and plan in a single state so switching day atomically swaps both,
+  // avoiding a stale-plan-for-new-date persistence race.
+  const [{ date, plan }, setDayState] = useState(() => {
+    const d = todayKey();
+    return { date: d, plan: getPlan(d) };
+  });
+
+  function setLocalPlan(next: DailyPlan | ((prev: DailyPlan) => DailyPlan)) {
+    setDayState((s) => ({
+      date: s.date,
+      plan: typeof next === 'function' ? (next as (p: DailyPlan) => DailyPlan)(s.plan) : next,
+    }));
+  }
+
+  // Switch day: load that day's plan atomically.
+  useEffect(() => {
+    const target = day === 'today' ? todayKey() : tomorrowKey();
+    setDayState({ date: target, plan: getPlan(target) });
+  }, [day]);
+
   const [dragId, setDragId] = useState<string | null>(null);
   const [showExamples, setShowExamples] = useState<Slot | null>(null);
   const [filterSlot, setFilterSlot] = useState<Slot | null>(null);
@@ -229,15 +248,12 @@ export default function Planner() {
 
   useEffect(() => {
     const ids = new Set(todos.map((t) => t.id));
-    setLocalPlan((p) => {
-      const next: DailyPlan = {
-        bigTask: p.bigTask && ids.has(p.bigTask) ? p.bigTask : undefined,
-        mediumTasks: p.mediumTasks.filter((id) => ids.has(id)),
-        smallTasks: p.smallTasks.filter((id) => ids.has(id)),
-        reflection: p.reflection,
-      };
-      return next;
-    });
+    setLocalPlan((p) => ({
+      bigTask: p.bigTask && ids.has(p.bigTask) ? p.bigTask : undefined,
+      mediumTasks: p.mediumTasks.filter((id) => ids.has(id)),
+      smallTasks: p.smallTasks.filter((id) => ids.has(id)),
+      reflection: p.reflection,
+    }));
   }, [todos]);
 
   const byId = useMemo(() => new Map(todos.map((t) => [t.id, t])), [todos]);
@@ -250,12 +266,26 @@ export default function Planner() {
     return s;
   }, [plan]);
 
+  const otherDayAssigned = useMemo(() => {
+    const otherDate = day === 'today' ? tomorrowKey() : todayKey();
+    const other = getPlan(otherDate);
+    const s = new Set<string>();
+    if (other.bigTask) s.add(other.bigTask);
+    other.mediumTasks.forEach((id) => s.add(id));
+    other.smallTasks.forEach((id) => s.add(id));
+    return s;
+  }, [day, plan]);
+
   const allLabeledPool = useMemo(
     () =>
       todos.filter(
-        (t) => !t.is_completed && !assignedIds.has(t.id) && !!t.estimated_minutes,
+        (t) =>
+          !t.is_completed &&
+          !assignedIds.has(t.id) &&
+          !otherDayAssigned.has(t.id) &&
+          !!t.estimated_minutes,
       ),
-    [todos, assignedIds],
+    [todos, assignedIds, otherDayAssigned],
   );
 
   const pool = useMemo(() => {
@@ -369,11 +399,36 @@ export default function Planner() {
 
   return (
     <div className="h-full flex flex-col">
-      <header className="flex items-center justify-between px-6 py-4 border-b border-zinc-800">
-        <div>
-          <h1 className="text-xl font-semibold">Today</h1>
-          <p className="text-xs text-zinc-500">
-            {formatDate(date)} · Deep Focus AM → Quick Wins PM
+      <header className="flex items-center justify-between px-6 py-4 border-b border-zinc-800 gap-4">
+        <div className="min-w-0">
+          <div className="flex items-center gap-3">
+            <h1 className="text-xl font-semibold">
+              {day === 'today' ? 'Today' : 'Tomorrow'}
+            </h1>
+            <div className="flex items-center bg-zinc-900 border border-zinc-800 rounded-full p-0.5">
+              <button
+                onClick={() => setDay('today')}
+                className={`px-3 py-0.5 text-xs rounded-full cursor-pointer transition ${
+                  day === 'today' ? 'bg-accent text-black' : 'text-zinc-400 hover:text-white'
+                }`}
+              >
+                Today
+              </button>
+              <button
+                onClick={() => setDay('tomorrow')}
+                className={`px-3 py-0.5 text-xs rounded-full cursor-pointer transition ${
+                  day === 'tomorrow' ? 'bg-accent text-black' : 'text-zinc-400 hover:text-white'
+                }`}
+              >
+                Tomorrow
+              </button>
+            </div>
+          </div>
+          <p className="text-xs text-zinc-500 mt-1">
+            {formatDate(date)} ·{' '}
+            {day === 'tomorrow'
+              ? 'Plan ahead — you can edit again in the morning'
+              : 'Deep Focus AM → Quick Wins PM'}
           </p>
         </div>
       </header>

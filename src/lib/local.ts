@@ -24,9 +24,18 @@ function write<T>(key: string, value: T) {
   window.dispatchEvent(new Event(`local:${key}`));
 }
 
-export function todayKey() {
-  const d = new Date();
+function fmtDateKey(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+export function todayKey() {
+  return fmtDateKey(new Date());
+}
+
+export function tomorrowKey() {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  return fmtDateKey(d);
 }
 
 export function getMatrix(): Record<string, Quadrant> {
