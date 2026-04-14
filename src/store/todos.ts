@@ -3,7 +3,8 @@ import api, { NetworkError } from '../lib/api';
 import { Todo } from '../types';
 import { enqueue, isTempId, loadQueue, remapInQueue, saveQueue } from '../lib/sync';
 import { remapLocalId } from '../lib/local';
-import { subscribe as subscribeNetwork } from '../lib/network';
+import { isOnline, subscribe as subscribeNetwork } from '../lib/network';
+import { getToken } from '../lib/auth';
 
 const CACHE_KEY = 'mypilot_todos_cache';
 
@@ -215,5 +216,41 @@ export async function drainQueue() {
 
 // Auto-drain on network recovery
 subscribeNetwork((online) => {
-  if (online) void drainQueue();
+  if (online) {
+    void drainQueue();
+    void refreshFromServer();
+  }
 });
+
+// ---- Background refresh ----
+
+let refreshInFlight = false;
+
+export async function refreshFromServer() {
+  if (refreshInFlight) return;
+  if (!isOnline()) return;
+  if (!getToken()) return;
+  if (typeof document !== 'undefined' && document.hidden) return;
+
+  refreshInFlight = true;
+  try {
+    const fresh = await api.get<Todo[]>('/todos?limit=200');
+    const temps = cache.filter((t) => isTempId(t.id));
+    setCache([...temps, ...fresh]);
+  } catch {
+    // Silent — keep showing the cache.
+  } finally {
+    refreshInFlight = false;
+  }
+}
+
+// Poll every 5 min while document is visible. Re-poll immediately on focus/visibility.
+const POLL_INTERVAL_MS = 5 * 60_000;
+
+if (typeof window !== 'undefined') {
+  setInterval(() => void refreshFromServer(), POLL_INTERVAL_MS);
+  window.addEventListener('focus', () => void refreshFromServer());
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) void refreshFromServer();
+  });
+}

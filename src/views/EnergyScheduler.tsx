@@ -11,6 +11,7 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import { useTodos, updateTodo } from '../store/todos';
+import { openTask } from '../store/selection';
 import { EnergyType, Todo } from '../types';
 import Icon from '../components/Icon';
 
@@ -88,9 +89,7 @@ function DraggableTodo({ t }: { t: Todo }) {
   return (
     <div
       ref={setNodeRef}
-      {...listeners}
-      {...attributes}
-      className={`flex items-center gap-2 px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-sm cursor-grab active:cursor-grabbing select-none ${
+      className={`flex items-center gap-2 px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-sm select-none ${
         isDragging ? 'opacity-30' : ''
       }`}
     >
@@ -105,7 +104,14 @@ function DraggableTodo({ t }: { t: Todo }) {
           }`}
         />
       )}
-      <span className="flex-1 truncate text-zinc-100">{t.title}</span>
+      <span
+        {...listeners}
+        {...attributes}
+        onClick={() => openTask(t.id)}
+        className="flex-1 truncate text-zinc-100 cursor-pointer hover:text-accent transition"
+      >
+        {t.title}
+      </span>
     </div>
   );
 }

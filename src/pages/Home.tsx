@@ -9,7 +9,9 @@ import EnergyScheduler from '../views/EnergyScheduler';
 import Inbox from '../views/Inbox';
 import Completed from '../views/Completed';
 import Icon from '../components/Icon';
+import TaskDetail from '../components/TaskDetail';
 import { useOnline, usePendingCount } from '../lib/useNetwork';
+import { closeTask } from '../store/selection';
 
 const LAST_VIEW_KEY = 'mypilot_last_view';
 const SIDEBAR_KEY = 'mypilot_sidebar';
@@ -31,6 +33,10 @@ export default function Home({ onLogout }: { onLogout: () => void }) {
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        closeTask();
+        return;
+      }
       if (!(e.metaKey || e.ctrlKey)) return;
       switch (e.key) {
         case '1':
@@ -129,6 +135,7 @@ export default function Home({ onLogout }: { onLogout: () => void }) {
       </div>
 
       <QuickCapture />
+      <TaskDetail />
     </div>
   );
 }

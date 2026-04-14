@@ -11,6 +11,7 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import { useTodos, toggleComplete } from '../store/todos';
+import { openTask } from '../store/selection';
 import { Todo } from '../types';
 import {
   Quadrant,
@@ -83,7 +84,8 @@ function Card({ t, onToggle }: { t: Todo; onToggle: (t: Todo) => void }) {
       <span
         {...listeners}
         {...attributes}
-        className={`flex-1 truncate cursor-grab active:cursor-grabbing select-none ${
+        onClick={() => openTask(t.id)}
+        className={`flex-1 truncate cursor-pointer select-none hover:text-accent transition ${
           t.is_completed ? 'line-through text-zinc-500' : 'text-zinc-100'
         }`}
       >

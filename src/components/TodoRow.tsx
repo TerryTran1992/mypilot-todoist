@@ -1,6 +1,7 @@
 import { Todo } from '../types';
 import Icon from './Icon';
 import { deleteTodo, toggleComplete } from '../store/todos';
+import { openTask } from '../store/selection';
 
 export default function TodoRow({ t, onError }: { t: Todo; onError: (msg: string) => void }) {
   async function handleToggle() {
@@ -31,13 +32,14 @@ export default function TodoRow({ t, onError }: { t: Todo; onError: (msg: string
         {t.is_completed && <Icon name="check" size={12} className="text-black" />}
       </button>
 
-      <span
-        className={`flex-1 text-sm ${
+      <button
+        onClick={() => openTask(t.id)}
+        className={`flex-1 text-left text-sm cursor-pointer ${
           t.is_completed ? 'line-through text-zinc-500' : 'text-zinc-100'
-        }`}
+        } hover:text-accent transition`}
       >
         {t.title}
-      </span>
+      </button>
 
       {t.priority !== 'medium' && (
         <span
