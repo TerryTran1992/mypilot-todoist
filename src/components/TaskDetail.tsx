@@ -3,10 +3,16 @@ import { useTodos, updateTodo, deleteTodo, toggleComplete } from '../store/todos
 import { closeTask, useSelectedId } from '../store/selection';
 import api, { ApiError, NetworkError } from '../lib/api';
 import { isTempId } from '../lib/sync';
-import { Category, EnergyType, Priority, Todo, TodoComment } from '../types';
+import { Category, DelegationStatus, EnergyType, Priority, Todo, TodoComment } from '../types';
 import Icon from './Icon';
 
 const PRIORITIES: Priority[] = ['urgent', 'high', 'medium', 'low'];
+const DELEGATION_STATUSES: { id: DelegationStatus; label: string }[] = [
+  { id: 'delegated', label: 'Delegated' },
+  { id: 'in_progress', label: 'In Progress' },
+  { id: 'review', label: 'In Review' },
+  { id: 'done', label: 'Done' },
+];
 const ENERGIES: { id: EnergyType; label: string }[] = [
   { id: 'deep_focus', label: 'Deep Focus' },
   { id: 'quick_win', label: 'Quick Win' },
@@ -63,16 +69,20 @@ function Missing() {
 function Body({ todo }: { todo: Todo }) {
   const [title, setTitle] = useState(todo.title);
   const [content, setContent] = useState(todo.content ?? '');
+  const [delegatedTo, setDelegatedTo] = useState(todo.delegated_to ?? '');
   const titleRef = useRef(todo.title);
   const contentRef = useRef(todo.content ?? '');
+  const delegatedToRef = useRef(todo.delegated_to ?? '');
   const [savingErr, setSavingErr] = useState<string | null>(null);
 
   // Reset local text when switching to a different task.
   useEffect(() => {
     setTitle(todo.title);
     setContent(todo.content ?? '');
+    setDelegatedTo(todo.delegated_to ?? '');
     titleRef.current = todo.title;
     contentRef.current = todo.content ?? '';
+    delegatedToRef.current = todo.delegated_to ?? '';
   }, [todo.id]);
 
   // Sync from server-side updates if the user isn't actively editing.
@@ -107,6 +117,22 @@ function Body({ todo }: { todo: Todo }) {
     if (content === (todo.content ?? '')) return;
     contentRef.current = content;
     await patch({ content });
+  }
+
+  async function commitDelegatedTo() {
+    const trimmed = delegatedTo.trim();
+    if (trimmed === (todo.delegated_to ?? '')) return;
+    delegatedToRef.current = trimmed;
+    const update: Partial<Todo> = { delegated_to: trimmed || null };
+    if (trimmed && !todo.delegation_status) {
+      update.delegation_status = 'delegated';
+      update.delegated_at = new Date().toISOString();
+    }
+    if (!trimmed) {
+      update.delegation_status = null;
+      update.delegated_at = null;
+    }
+    await patch(update);
   }
 
   async function handleDelete() {
@@ -217,6 +243,50 @@ function Body({ todo }: { todo: Todo }) {
             ))}
           </div>
         </Field>
+
+        <Field label="Delegated to">
+          <input
+            type="text"
+            value={delegatedTo}
+            onChange={(e) => setDelegatedTo(e.target.value)}
+            onBlur={commitDelegatedTo}
+            placeholder="Name of person handling this"
+            className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm focus:border-accent focus:outline-none"
+          />
+        </Field>
+
+        {todo.delegated_to && (
+          <Field label="Delegation status">
+            <div className="flex flex-wrap gap-1">
+              {DELEGATION_STATUSES.map((s) => (
+                <button
+                  key={s.id}
+                  onClick={() => {
+                    const update: Partial<Todo> = { delegation_status: s.id };
+                    if (s.id === 'done') {
+                      update.is_completed = true;
+                      update.completed_at = new Date().toISOString();
+                    }
+                    void patch(update);
+                  }}
+                  className={`px-2 py-0.5 text-[11px] rounded-full cursor-pointer transition ${
+                    todo.delegation_status === s.id
+                      ? s.id === 'done'
+                        ? 'bg-accent text-black'
+                        : s.id === 'review'
+                        ? 'bg-amber-900 text-amber-200'
+                        : s.id === 'in_progress'
+                        ? 'bg-sky-900 text-sky-200'
+                        : 'bg-zinc-700 text-white'
+                      : 'bg-zinc-900 text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </Field>
+        )}
 
         <div className="grid grid-cols-2 gap-3">
           <Field label="Deadline">

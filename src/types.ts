@@ -30,4 +30,11 @@ export type Todo = {
   time_block_start?: string | null;
   time_block_end?: string | null;
   time_block_order?: number | null;
+  delegatable?: boolean;
+  delegated_to?: string | null;
+  delegation_status?: DelegationStatus | null;
+  delegated_at?: string | null;
+  follow_up_days?: number | null;
 };
+
+export type DelegationStatus = 'delegated' | 'in_progress' | 'review' | 'done';

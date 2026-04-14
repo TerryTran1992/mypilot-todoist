@@ -6,6 +6,7 @@ import BrainDump from '../views/BrainDump';
 import Planner from '../views/Planner';
 import Matrix from '../views/Matrix';
 import EnergyScheduler from '../views/EnergyScheduler';
+import Delegation from '../views/Delegation';
 import Inbox from '../views/Inbox';
 import Completed from '../views/Completed';
 import Icon from '../components/Icon';
@@ -57,9 +58,13 @@ export default function Home({ onLogout }: { onLogout: () => void }) {
           break;
         case '5':
           e.preventDefault();
-          setView('inbox');
+          setView('delegation');
           break;
         case '6':
+          e.preventDefault();
+          setView('inbox');
+          break;
+        case '7':
           e.preventDefault();
           setView('completed');
           break;
@@ -129,6 +134,7 @@ export default function Home({ onLogout }: { onLogout: () => void }) {
           {view === 'planner' && <Planner />}
           {view === 'matrix' && <Matrix />}
           {view === 'energy' && <EnergyScheduler />}
+          {view === 'delegation' && <Delegation />}
           {view === 'inbox' && <Inbox />}
           {view === 'completed' && <Completed />}
         </main>

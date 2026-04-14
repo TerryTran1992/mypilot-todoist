@@ -11,7 +11,9 @@ type IconProps = {
     | 'trash'
     | 'x'
     | 'sidebar'
-    | 'chevron';
+    | 'chevron'
+    | 'users'
+    | 'arrow-right';
   size?: number;
   className?: string;
 };
@@ -114,6 +116,22 @@ export default function Icon({ name, size = 18, className }: IconProps) {
       return (
         <svg {...common}>
           <polyline points="9 18 15 12 9 6" />
+        </svg>
+      );
+    case 'users':
+      return (
+        <svg {...common}>
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+        </svg>
+      );
+    case 'arrow-right':
+      return (
+        <svg {...common}>
+          <line x1="5" y1="12" x2="19" y2="12" />
+          <polyline points="12 5 19 12 12 19" />
         </svg>
       );
   }

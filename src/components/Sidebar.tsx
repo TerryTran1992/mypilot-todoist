@@ -1,20 +1,21 @@
 import { useTodos } from '../store/todos';
 import Icon from './Icon';
 
-export type View = 'brain' | 'planner' | 'matrix' | 'energy' | 'inbox' | 'completed';
+export type View = 'brain' | 'planner' | 'matrix' | 'energy' | 'delegation' | 'inbox' | 'completed';
 
 const items: {
   id: View;
   label: string;
-  icon: 'brain' | 'calendar' | 'grid' | 'zap' | 'inbox' | 'check';
+  icon: 'brain' | 'calendar' | 'grid' | 'zap' | 'users' | 'inbox' | 'check';
   shortcut: string;
 }[] = [
   { id: 'brain', label: 'Brain Dump', icon: 'brain', shortcut: '⌘1' },
   { id: 'planner', label: 'Daily Planner', icon: 'calendar', shortcut: '⌘2' },
   { id: 'matrix', label: 'Matrix', icon: 'grid', shortcut: '⌘3' },
   { id: 'energy', label: 'Energy', icon: 'zap', shortcut: '⌘4' },
-  { id: 'inbox', label: 'Inbox', icon: 'inbox', shortcut: '⌘5' },
-  { id: 'completed', label: 'Completed', icon: 'check', shortcut: '⌘6' },
+  { id: 'delegation', label: 'Delegation', icon: 'users', shortcut: '⌘5' },
+  { id: 'inbox', label: 'Inbox', icon: 'inbox', shortcut: '⌘6' },
+  { id: 'completed', label: 'Completed', icon: 'check', shortcut: '⌘7' },
 ];
 
 export default function Sidebar({
@@ -39,11 +40,16 @@ export default function Sidebar({
     (t) => !t.is_completed && t.energy_type && t.time_block_date?.slice(0, 10) === today,
   ).length;
 
+  const delegationCount = todos.filter(
+    (t) => t.delegated_to && t.delegation_status && t.delegation_status !== 'done',
+  ).length;
+
   const counts: Record<View, number> = {
     brain: 0,
     planner: 0,
     matrix: 0,
     energy: energyCount,
+    delegation: delegationCount,
     inbox: inboxCount,
     completed: doneCount,
   };
