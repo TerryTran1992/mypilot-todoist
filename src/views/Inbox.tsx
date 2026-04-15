@@ -2,6 +2,7 @@ import { FormEvent, useMemo, useRef, useState } from 'react';
 import { createTodo, useTodos } from '../store/todos';
 import TodoRow from '../components/TodoRow';
 import Icon from '../components/Icon';
+import { byScore } from '../lib/sort';
 
 type Priority = 'low' | 'medium' | 'high' | 'urgent';
 type Filter = 'all' | 'open' | 'done';
@@ -28,7 +29,7 @@ export default function Inbox() {
       })
       .sort((a, b) => {
         if (a.is_pinned !== b.is_pinned) return a.is_pinned ? -1 : 1;
-        return 0;
+        return byScore(a, b);
       });
   }, [todos, filter, search]);
 

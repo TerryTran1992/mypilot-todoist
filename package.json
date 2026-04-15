@@ -1,6 +1,6 @@
 {
   "name": "mypilot-todoist",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "description": "MyPilot Todoist - Desktop task manager",
   "main": "dist-electron/main.js",
   "type": "module",

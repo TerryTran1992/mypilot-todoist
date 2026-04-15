@@ -14,6 +14,7 @@ import { useTodos, toggleComplete, updateTodo } from '../store/todos';
 import { openTask } from '../store/selection';
 import { EnergyType, Todo } from '../types';
 import { DailyPlan, getPlan, setPlan, todayKey, tomorrowKey } from '../lib/local';
+import { byScore } from '../lib/sort';
 import Icon from '../components/Icon';
 
 type Slot = 'big' | 'medium' | 'small';
@@ -278,13 +279,15 @@ export default function Planner() {
 
   const allLabeledPool = useMemo(
     () =>
-      todos.filter(
-        (t) =>
-          !t.is_completed &&
-          !assignedIds.has(t.id) &&
-          !otherDayAssigned.has(t.id) &&
-          !!t.estimated_minutes,
-      ),
+      todos
+        .filter(
+          (t) =>
+            !t.is_completed &&
+            !assignedIds.has(t.id) &&
+            !otherDayAssigned.has(t.id) &&
+            !!t.estimated_minutes,
+        )
+        .sort(byScore),
     [todos, assignedIds, otherDayAssigned],
   );
 

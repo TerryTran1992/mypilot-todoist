@@ -21,6 +21,7 @@ import {
 } from '../lib/local';
 import { useLocalStore } from '../lib/useLocalStore';
 import Icon from '../components/Icon';
+import { byScore } from '../lib/sort';
 
 type QuadrantDef = {
   id: Quadrant;
@@ -136,6 +137,8 @@ export default function Matrix() {
       if (q) byQ[q].push(t);
       else pool.push(t);
     }
+    (Object.keys(byQ) as Quadrant[]).forEach((k) => byQ[k].sort(byScore));
+    pool.sort(byScore);
     return { byQ, pool };
   }, [openTodos, matrix]);
 

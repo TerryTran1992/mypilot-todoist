@@ -3,6 +3,7 @@ import { useTodos, updateTodo } from '../store/todos';
 import { openTask } from '../store/selection';
 import { DelegationStatus, Todo } from '../types';
 import Icon from '../components/Icon';
+import { byScore } from '../lib/sort';
 
 type Column = {
   id: DelegationStatus;
@@ -50,6 +51,7 @@ export default function Delegation() {
       const status = t.delegation_status as DelegationStatus;
       if (g[status]) g[status].push(t);
     }
+    (Object.keys(g) as DelegationStatus[]).forEach((k) => g[k].sort(byScore));
     return g;
   }, [delegated]);
 

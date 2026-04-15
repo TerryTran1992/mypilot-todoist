@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useTodos } from '../store/todos';
 import TodoRow from '../components/TodoRow';
+import { byScore } from '../lib/sort';
 
 function dayKey(iso: string) {
   return iso.slice(0, 10);
@@ -34,6 +35,8 @@ export default function Completed() {
       const key = dayKey(t.completed_at ?? t.created_at);
       (groups[key] ??= []).push(t);
     }
+    // Days are already newest-first thanks to `done` sort; within each day, order by priority score.
+    for (const k of Object.keys(groups)) groups[k].sort(byScore);
     return Object.entries(groups);
   }, [done]);
 

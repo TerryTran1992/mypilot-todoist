@@ -17,6 +17,7 @@ export type Todo = {
   title: string;
   content?: string | null;
   priority: Priority;
+  priority_score?: number;
   is_completed: boolean;
   is_pinned: boolean;
   created_at: string;

@@ -3,6 +3,7 @@ import { useTodos, updateTodo } from '../store/todos';
 import { openTask } from '../store/selection';
 import { EnergyType, Todo } from '../types';
 import Icon from '../components/Icon';
+import { byScore } from '../lib/sort';
 
 type SizeKey = 'big' | 'medium' | 'small';
 
@@ -55,7 +56,10 @@ export default function Weekly() {
   const { todos, loading, error, setError } = useTodos();
   const [filter, setFilter] = useState<'unlabeled' | 'all'>('unlabeled');
 
-  const open = useMemo(() => todos.filter((t) => !t.is_completed), [todos]);
+  const open = useMemo(
+    () => todos.filter((t) => !t.is_completed).sort(byScore),
+    [todos],
+  );
   const unlabeled = useMemo(() => open.filter((t) => !t.estimated_minutes), [open]);
   const labeled = useMemo(() => open.filter((t) => t.estimated_minutes), [open]);
 
