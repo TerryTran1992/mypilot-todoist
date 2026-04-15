@@ -55,6 +55,7 @@ function sizeFor(minutes: number | null | undefined): SizeKey | null {
 export default function Weekly() {
   const { todos, loading, error, setError } = useTodos();
   const [filter, setFilter] = useState<'unlabeled' | 'all'>('unlabeled');
+  const [search, setSearch] = useState('');
 
   const open = useMemo(
     () => todos.filter((t) => !t.is_completed).sort(byScore),
@@ -63,7 +64,12 @@ export default function Weekly() {
   const unlabeled = useMemo(() => open.filter((t) => !t.estimated_minutes), [open]);
   const labeled = useMemo(() => open.filter((t) => t.estimated_minutes), [open]);
 
-  const visible = filter === 'unlabeled' ? unlabeled : open;
+  const visible = useMemo(() => {
+    const base = filter === 'unlabeled' ? unlabeled : open;
+    const q = search.trim().toLowerCase();
+    if (!q) return base;
+    return base.filter((t) => t.title.toLowerCase().includes(q));
+  }, [filter, unlabeled, open, search]);
 
   async function setSize(t: Todo, size: SizeKey) {
     const meta = SIZES.find((s) => s.id === size)!;
@@ -106,7 +112,7 @@ export default function Weekly() {
           Label every brain-dumped task as Big, Med, or Quick so the Daily Planner can use them.
         </p>
 
-        <div className="mt-4 flex items-center gap-2">
+        <div className="mt-4 flex items-center gap-2 flex-wrap">
           {(['unlabeled', 'all'] as const).map((f) => (
             <button
               key={f}
@@ -120,6 +126,17 @@ export default function Weekly() {
               {f === 'unlabeled' ? `Unlabeled · ${counts.unlabeled}` : `All · ${open.length}`}
             </button>
           ))}
+          <div className="relative ml-2">
+            <Icon name="search" size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+            <input
+              data-search-input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search tasks…"
+              className="pl-8 pr-3 py-1 text-xs bg-zinc-900 border border-zinc-800 rounded-full focus:border-accent focus:outline-none w-56"
+            />
+          </div>
           <div className="ml-auto flex items-center gap-3 text-[11px] text-zinc-500">
             <span>Big · {counts.big}</span>
             <span>Med · {counts.medium}</span>
@@ -142,12 +159,18 @@ export default function Weekly() {
           <p className="text-zinc-500 text-sm">Loading…</p>
         ) : visible.length === 0 ? (
           <div className="max-w-md mx-auto text-center py-12">
-            <Icon name="check" size={28} className="mx-auto text-zinc-600 mb-3" />
+            <Icon name={search ? 'search' : 'check'} size={28} className="mx-auto text-zinc-600 mb-3" />
             <p className="text-zinc-300 mb-1">
-              {filter === 'unlabeled' ? 'Everything is labeled.' : 'No open tasks.'}
+              {search
+                ? 'Nothing matches.'
+                : filter === 'unlabeled'
+                ? 'Everything is labeled.'
+                : 'No open tasks.'}
             </p>
             <p className="text-xs text-zinc-500">
-              {filter === 'unlabeled'
+              {search
+                ? 'Try a different search term.'
+                : filter === 'unlabeled'
                 ? 'Head to the Today view to schedule your day.'
                 : 'Capture some in Brain Dump first.'}
             </p>

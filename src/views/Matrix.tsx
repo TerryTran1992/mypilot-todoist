@@ -120,6 +120,7 @@ export default function Matrix() {
   const { todos, loading, error, setError } = useTodos();
   const matrix = useLocalStore('mypilot_matrix', getMatrix);
   const [dragId, setDragId] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
   const openTodos = useMemo(() => todos.filter((t) => !t.is_completed), [todos]);
@@ -129,10 +130,16 @@ export default function Matrix() {
     clearMatrixFor(ids);
   }, [todos]);
 
+  const filteredOpen = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return openTodos;
+    return openTodos.filter((t) => t.title.toLowerCase().includes(q));
+  }, [openTodos, search]);
+
   const grouped = useMemo(() => {
     const byQ: Record<Quadrant, Todo[]> = { do: [], schedule: [], delegate: [], eliminate: [] };
     const pool: Todo[] = [];
-    for (const t of openTodos) {
+    for (const t of filteredOpen) {
       const q = matrix[t.id];
       if (q) byQ[q].push(t);
       else pool.push(t);
@@ -140,7 +147,7 @@ export default function Matrix() {
     (Object.keys(byQ) as Quadrant[]).forEach((k) => byQ[k].sort(byScore));
     pool.sort(byScore);
     return { byQ, pool };
-  }, [openTodos, matrix]);
+  }, [filteredOpen, matrix]);
 
   const onToggle = useCallback(
     async (t: Todo) => {
@@ -173,10 +180,21 @@ export default function Matrix() {
 
   return (
     <div className="h-full flex flex-col">
-      <header className="flex items-center justify-between px-6 py-4 border-b border-zinc-800">
+      <header className="flex items-center justify-between px-6 py-4 border-b border-zinc-800 gap-4">
         <div>
           <h1 className="text-xl font-semibold">Eisenhower Matrix</h1>
           <p className="text-xs text-zinc-500">Drag tasks into quadrants to decide priority</p>
+        </div>
+        <div className="relative shrink-0">
+          <Icon name="search" size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+          <input
+            data-search-input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search tasks…"
+            className="pl-8 pr-3 py-1 text-xs bg-zinc-900 border border-zinc-800 rounded-full focus:border-accent focus:outline-none w-56"
+          />
         </div>
       </header>
 
@@ -210,7 +228,9 @@ export default function Matrix() {
                   </div>
                   <div className="flex-1 overflow-y-auto p-3 space-y-2">
                     {grouped.byQ[q.id].length === 0 ? (
-                      <p className="text-xs text-zinc-600 italic">Drop tasks here</p>
+                      <p className="text-xs text-zinc-600 italic">
+                        {search ? 'Nothing matches.' : 'Drop tasks here'}
+                      </p>
                     ) : (
                       grouped.byQ[q.id].map((t) => <Card key={t.id} t={t} onToggle={onToggle} />)
                     )}
@@ -231,7 +251,9 @@ export default function Matrix() {
               </div>
               <div className="flex-1 overflow-y-auto p-3 space-y-2">
                 {grouped.pool.length === 0 ? (
-                  <p className="text-xs text-zinc-600 italic">Everything sorted.</p>
+                  <p className="text-xs text-zinc-600 italic">
+                    {search ? 'Nothing matches.' : 'Everything sorted.'}
+                  </p>
                 ) : (
                   grouped.pool.map((t) => <Card key={t.id} t={t} onToggle={onToggle} />)
                 )}
