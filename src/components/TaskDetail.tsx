@@ -316,6 +316,13 @@ function Body({ todo }: { todo: Todo }) {
         <div className="text-xs text-zinc-600 space-y-0.5 pt-2 border-t border-zinc-900">
           <p>Created · {fmtDateTime(todo.created_at)}</p>
           {todo.completed_at && <p>Completed · {fmtDateTime(todo.completed_at)}</p>}
+          {typeof todo.priority_score === 'number' && (
+            <p title="Server-calculated ranking score (0–1000, higher = more important)">
+              Priority score ·{' '}
+              <span className="text-zinc-400 font-medium">{todo.priority_score}</span>{' '}
+              <span className="text-zinc-700">/ 1000</span>
+            </p>
+          )}
         </div>
 
         <Comments todoId={todo.id} />
