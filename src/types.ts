@@ -38,4 +38,4 @@ export type Todo = {
   follow_up_days?: number | null;
 };
 
-export type DelegationStatus = 'delegated' | 'in_progress' | 'review' | 'done';
+export type DelegationStatus = 'delegated' | 'in_progress' | 'done';

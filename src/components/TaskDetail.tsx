@@ -8,9 +8,8 @@ import Icon from './Icon';
 
 const PRIORITIES: Priority[] = ['urgent', 'high', 'medium', 'low'];
 const DELEGATION_STATUSES: { id: DelegationStatus; label: string }[] = [
-  { id: 'delegated', label: 'Delegated' },
+  { id: 'delegated', label: 'Todo' },
   { id: 'in_progress', label: 'In Progress' },
-  { id: 'review', label: 'In Review' },
   { id: 'done', label: 'Done' },
 ];
 const ENERGIES: { id: EnergyType; label: string }[] = [
@@ -273,8 +272,6 @@ function Body({ todo }: { todo: Todo }) {
                     todo.delegation_status === s.id
                       ? s.id === 'done'
                         ? 'bg-accent text-black'
-                        : s.id === 'review'
-                        ? 'bg-amber-900 text-amber-200'
                         : s.id === 'in_progress'
                         ? 'bg-sky-900 text-sky-200'
                         : 'bg-zinc-700 text-white'

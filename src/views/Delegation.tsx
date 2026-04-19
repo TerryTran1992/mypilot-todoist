@@ -14,9 +14,8 @@ type Column = {
 };
 
 const COLUMNS: Column[] = [
-  { id: 'delegated', label: 'Delegated', next: 'in_progress', bar: 'bg-zinc-600', badge: 'bg-zinc-800 text-zinc-300' },
-  { id: 'in_progress', label: 'In Progress', next: 'review', bar: 'bg-sky-500', badge: 'bg-sky-950 text-sky-300' },
-  { id: 'review', label: 'In Review', next: 'done', bar: 'bg-amber-500', badge: 'bg-amber-950 text-amber-300' },
+  { id: 'delegated', label: 'Todo', next: 'in_progress', bar: 'bg-zinc-600', badge: 'bg-zinc-800 text-zinc-300' },
+  { id: 'in_progress', label: 'In Progress', next: 'done', bar: 'bg-sky-500', badge: 'bg-sky-950 text-sky-300' },
   { id: 'done', label: 'Done', bar: 'bg-accent', badge: 'bg-accent/20 text-accent' },
 ];
 
@@ -44,11 +43,11 @@ export default function Delegation() {
     const g: Record<DelegationStatus, Todo[]> = {
       delegated: [],
       in_progress: [],
-      review: [],
       done: [],
     };
     for (const t of delegated) {
-      const status = t.delegation_status as DelegationStatus;
+      const raw = t.delegation_status as string;
+      const status = (raw === 'review' ? 'in_progress' : raw) as DelegationStatus;
       if (g[status]) g[status].push(t);
     }
     (Object.keys(g) as DelegationStatus[]).forEach((k) => g[k].sort(byScore));
@@ -109,7 +108,7 @@ export default function Delegation() {
         </div>
       ) : (
         <div className="flex-1 overflow-x-auto">
-          <div className="min-w-max h-full grid grid-cols-4 gap-3 p-6">
+          <div className="min-w-max h-full grid grid-cols-3 gap-3 p-6">
             {COLUMNS.map((col) => {
               const items = grouped[col.id];
               return (
