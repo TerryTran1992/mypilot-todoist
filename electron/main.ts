@@ -114,7 +114,9 @@ function toggleQuickAdd() {
 }
 
 function createTrayIcon() {
-  const iconPath = path.join(__dirname, '../build/icon.png');
+  const iconPath = app.isPackaged
+    ? path.join(process.resourcesPath, 'tray-icon.png')
+    : path.join(__dirname, '../build/tray-icon.png');
   let icon = nativeImage.createFromPath(iconPath);
   icon = icon.resize({ width: 18, height: 18 });
   if (process.platform === 'darwin') {

@@ -1,6 +1,6 @@
 {
   "name": "mypilot-todoist",
-  "version": "0.13.0",
+  "version": "0.13.1",
   "description": "MyPilot Todoist - Desktop task manager",
   "main": "dist-electron/main.js",
   "type": "module",
@@ -46,6 +46,12 @@
     "files": [
       "dist/**/*",
       "dist-electron/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "build/tray-icon.png",
+        "to": "tray-icon.png"
+      }
     ],
     "mac": {
       "target": [
