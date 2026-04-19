@@ -251,4 +251,7 @@ if (typeof window !== 'undefined') {
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) void refreshFromServer();
   });
+
+  const w = window as unknown as { api?: { onTodosRefresh?: (cb: () => void) => () => void } };
+  w.api?.onTodosRefresh?.(() => void refreshFromServer());
 }

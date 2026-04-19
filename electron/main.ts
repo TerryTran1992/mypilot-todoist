@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, globalShortcut, Tray, Menu, nativeImage, screen } from 'electron';
 import path from 'node:path';
 import { autoUpdater } from 'electron-updater';
 
@@ -8,8 +8,12 @@ const API_BASE = process.env.API_BASE || 'https://api.mypilot.life';
 autoUpdater.autoDownload = true;
 autoUpdater.autoInstallOnAppQuit = true;
 
+let mainWindow: BrowserWindow | null = null;
+let quickAddWindow: BrowserWindow | null = null;
+let tray: Tray | null = null;
+
 function createWindow() {
-  const win = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 1000,
     height: 700,
     minWidth: 800,
@@ -24,15 +28,133 @@ function createWindow() {
   });
 
   if (isDev) {
-    win.loadURL('http://localhost:5173');
-    win.webContents.openDevTools({ mode: 'detach' });
+    mainWindow.loadURL('http://localhost:5173');
+    mainWindow.webContents.openDevTools({ mode: 'detach' });
   } else {
-    win.loadFile(path.join(__dirname, '../dist/index.html'));
+    mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
   }
+
+  mainWindow.on('closed', () => {
+    mainWindow = null;
+  });
+}
+
+function createQuickAddWindow() {
+  if (quickAddWindow && !quickAddWindow.isDestroyed()) {
+    quickAddWindow.show();
+    quickAddWindow.focus();
+    return;
+  }
+
+  const cursorPoint = screen.getCursorScreenPoint();
+  const display = screen.getDisplayNearestPoint(cursorPoint);
+  const { x, y, width } = display.workArea;
+
+  quickAddWindow = new BrowserWindow({
+    width: 560,
+    height: 180,
+    x: x + Math.round((width - 560) / 2),
+    y: y + 180,
+    frame: false,
+    transparent: true,
+    resizable: false,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    show: false,
+    backgroundColor: '#00000000',
+    vibrancy: 'under-window',
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  });
+
+  if (isDev) {
+    quickAddWindow.loadURL('http://localhost:5173/quick-add.html');
+  } else {
+    quickAddWindow.loadFile(path.join(__dirname, '../dist/quick-add.html'));
+  }
+
+  quickAddWindow.once('ready-to-show', () => {
+    quickAddWindow?.show();
+    quickAddWindow?.focus();
+  });
+
+  quickAddWindow.on('blur', () => {
+    hideQuickAdd();
+  });
+
+  quickAddWindow.on('closed', () => {
+    quickAddWindow = null;
+  });
+}
+
+function hideQuickAdd() {
+  if (quickAddWindow && !quickAddWindow.isDestroyed()) {
+    quickAddWindow.hide();
+  }
+}
+
+function showMainWindow() {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.show();
+    mainWindow.focus();
+  } else {
+    createWindow();
+  }
+}
+
+function toggleQuickAdd() {
+  if (quickAddWindow && !quickAddWindow.isDestroyed() && quickAddWindow.isVisible()) {
+    hideQuickAdd();
+  } else {
+    createQuickAddWindow();
+  }
+}
+
+function createTrayIcon() {
+  const iconPath = path.join(__dirname, '../build/icon.png');
+  let icon = nativeImage.createFromPath(iconPath);
+  icon = icon.resize({ width: 18, height: 18 });
+  if (process.platform === 'darwin') {
+    icon.setTemplateImage(true);
+  }
+
+  tray = new Tray(icon);
+  tray.setToolTip('MyPilot Todoist');
+
+  const contextMenu = Menu.buildFromTemplate([
+    {
+      label: 'Add Task',
+      accelerator: 'Ctrl+Space',
+      click: () => toggleQuickAdd(),
+    },
+    { type: 'separator' },
+    {
+      label: 'Show Todoist',
+      accelerator: 'CmdOrCtrl+Shift+T',
+      click: () => showMainWindow(),
+    },
+    { type: 'separator' },
+    {
+      label: 'Quit',
+      accelerator: 'CmdOrCtrl+Q',
+      click: () => app.quit(),
+    },
+  ]);
+
+  tray.setContextMenu(contextMenu);
+  tray.on('click', () => showMainWindow());
 }
 
 app.whenReady().then(() => {
   createWindow();
+  createTrayIcon();
+
+  globalShortcut.register('Ctrl+Space', () => toggleQuickAdd());
+  globalShortcut.register('CmdOrCtrl+Shift+T', () => showMainWindow());
+
   if (!isDev) setupAutoUpdate();
 });
 
@@ -67,6 +189,20 @@ app.on('window-all-closed', () => {
 
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) createWindow();
+});
+
+app.on('will-quit', () => {
+  globalShortcut.unregisterAll();
+});
+
+ipcMain.on('quick-add:hide', () => {
+  hideQuickAdd();
+});
+
+ipcMain.on('quick-add:created', () => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('todos:refresh');
+  }
 });
 
 // IPC: proxy HTTP requests via Node fetch to bypass Chromium TLS/CORS quirks.

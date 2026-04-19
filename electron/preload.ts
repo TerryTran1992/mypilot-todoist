@@ -15,4 +15,11 @@ contextBridge.exposeInMainWorld('api', {
     token?: string | null;
     cookie?: string | null;
   }): Promise<ApiResponse> => ipcRenderer.invoke('api:request', args),
+  hideQuickAdd: () => ipcRenderer.send('quick-add:hide'),
+  notifyTodoCreated: () => ipcRenderer.send('quick-add:created'),
+  onTodosRefresh: (callback: () => void) => {
+    ipcRenderer.on('todos:refresh', callback);
+    return () => ipcRenderer.removeListener('todos:refresh', callback);
+  },
+  platform: process.platform,
 });

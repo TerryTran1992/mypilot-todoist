@@ -19,6 +19,10 @@ declare global {
         token?: string | null;
         cookie?: string | null;
       }) => Promise<ApiResponse<T>>;
+      hideQuickAdd: () => void;
+      notifyTodoCreated: () => void;
+      onTodosRefresh: (callback: () => void) => () => void;
+      platform: string;
     };
   }
 }
