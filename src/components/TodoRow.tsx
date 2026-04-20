@@ -22,11 +22,13 @@ export default function TodoRow({ t, onError }: { t: Todo; onError: (msg: string
   }
 
   return (
-    <li className="flex items-center gap-3 px-6 py-3 border-b border-zinc-900 hover:bg-zinc-900/50 transition group">
+    <li className="flex items-center gap-3 px-6 py-3 border-b border-zinc-900/60 hover:bg-surface-raised/50 transition-all duration-200 group">
       <button
         onClick={handleToggle}
-        className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 cursor-pointer transition ${
-          t.is_completed ? 'bg-accent border-accent' : 'border-zinc-600 hover:border-accent'
+        className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 cursor-pointer transition-all duration-200 ${
+          t.is_completed
+            ? 'bg-accent border-accent scale-95'
+            : 'border-zinc-600 hover:border-accent hover:shadow-sm hover:shadow-accent/20'
         }`}
         aria-label={t.is_completed ? 'Mark incomplete' : 'Mark complete'}
       >
@@ -35,9 +37,9 @@ export default function TodoRow({ t, onError }: { t: Todo; onError: (msg: string
 
       <button
         onClick={() => openTask(t.id)}
-        className={`flex-1 text-left text-sm cursor-pointer ${
-          t.is_completed ? 'line-through text-zinc-500' : 'text-zinc-100'
-        } hover:text-accent transition`}
+        className={`flex-1 text-left text-sm cursor-pointer font-medium transition-colors duration-200 ${
+          t.is_completed ? 'line-through text-zinc-600' : 'text-zinc-200 hover:text-accent'
+        }`}
       >
         {t.title}
       </button>
@@ -46,12 +48,12 @@ export default function TodoRow({ t, onError }: { t: Todo; onError: (msg: string
 
       {t.priority !== 'medium' && (
         <span
-          className={`text-[10px] uppercase px-1.5 py-0.5 rounded ${
+          className={`text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full tracking-wide ${
             t.priority === 'urgent'
-              ? 'bg-red-950 text-red-300'
+              ? 'bg-red-950/80 text-red-300 border border-red-900/40'
               : t.priority === 'high'
-              ? 'bg-orange-950 text-orange-300'
-              : 'bg-zinc-800 text-zinc-400'
+              ? 'bg-orange-950/80 text-orange-300 border border-orange-900/40'
+              : 'bg-zinc-800/80 text-zinc-400 border border-zinc-700/40'
           }`}
         >
           {t.priority}
@@ -60,10 +62,10 @@ export default function TodoRow({ t, onError }: { t: Todo; onError: (msg: string
 
       <button
         onClick={handleDelete}
-        className="text-zinc-600 hover:text-red-400 opacity-0 group-hover:opacity-100 cursor-pointer transition"
+        className="text-zinc-700 hover:text-red-400 opacity-0 group-hover:opacity-100 cursor-pointer transition-all duration-200"
         aria-label="Delete"
       >
-        <Icon name="trash" size={16} />
+        <Icon name="trash" size={15} />
       </button>
     </li>
   );

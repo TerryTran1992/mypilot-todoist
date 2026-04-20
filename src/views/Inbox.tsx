@@ -29,24 +29,24 @@ export default function Inbox() {
 
   return (
     <div className="h-full flex flex-col">
-      <header className="drag flex items-center justify-between px-6 py-4 border-b border-zinc-800">
+      <header className="drag flex items-center justify-between px-6 py-4 border-b border-zinc-800/60">
         <div>
-          <h1 className="text-xl font-semibold">Inbox</h1>
-          <p className="text-xs text-zinc-500">
+          <h1 className="font-heading text-3xl font-bold text-accent">Inbox</h1>
+          <p className="text-xs text-zinc-500 font-medium mt-0.5">
             {todos.filter((t) => !t.is_completed).length} open · {todos.length} total
           </p>
         </div>
       </header>
 
-      <div className="flex items-center gap-2 px-6 py-3 border-b border-zinc-800">
+      <div className="flex items-center gap-2 px-6 py-3 border-b border-zinc-800/60">
         {(['open', 'all', 'done'] as Filter[]).map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
-            className={`px-3 py-1 text-xs rounded-full cursor-pointer capitalize transition ${
+            className={`px-3 py-1 text-xs font-semibold rounded-full cursor-pointer capitalize transition-all duration-200 ${
               filter === f
-                ? 'bg-accent text-black'
-                : 'bg-zinc-900 text-zinc-400 hover:text-white'
+                ? 'bg-accent text-black shadow-sm'
+                : 'bg-surface-raised text-zinc-400 hover:text-white border border-zinc-800/60'
             }`}
           >
             {f}
@@ -61,7 +61,7 @@ export default function Inbox() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search…"
-            className="pl-8 pr-3 py-1 text-xs bg-zinc-900 border border-zinc-800 rounded-full focus:border-accent focus:outline-none w-48"
+            className="pl-8 pr-3 py-1.5 text-xs bg-surface-raised border border-zinc-800/60 rounded-full focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/20 w-48 transition-all duration-200"
           />
         </div>
       </div>

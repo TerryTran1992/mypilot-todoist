@@ -68,8 +68,8 @@ export default function BrainDump({ onStartPlanning }: { onStartPlanning: () => 
   return (
     <div className="h-full flex flex-col items-center justify-center px-6 text-white">
       <div className="w-full max-w-xl">
-        <h1 className="text-4xl font-semibold mb-2 text-center">Brain Dump</h1>
-        <p className="text-zinc-400 text-center mb-10">
+        <h1 className="font-heading text-5xl font-bold mb-2 text-center text-accent">Brain Dump</h1>
+        <p className="text-zinc-400 text-center mb-10 font-medium">
           Get it out of your head. Type a thought, hit Enter, repeat.
         </p>
 
@@ -81,13 +81,13 @@ export default function BrainDump({ onStartPlanning }: { onStartPlanning: () => 
             onChange={(e) => setTitle(e.target.value)}
             disabled={busy}
             placeholder="What's on your mind?"
-            className="w-full px-6 py-4 text-lg bg-zinc-900 border border-zinc-800 rounded-2xl focus:border-accent focus:outline-none text-white placeholder-zinc-500"
+            className="w-full px-6 py-4 text-lg bg-surface-raised border border-zinc-800/60 rounded-2xl focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/20 text-white placeholder-zinc-500 transition-all duration-200"
           />
         </form>
 
         {matches.length > 0 && (
-          <div className="mt-2 bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
-            <p className="px-4 py-2 text-[11px] uppercase tracking-wider text-zinc-500 border-b border-zinc-800">
+          <div className="mt-2 bg-surface-raised border border-zinc-800/60 rounded-xl overflow-hidden">
+            <p className="px-4 py-2 text-[11px] uppercase tracking-wider text-zinc-500 border-b border-zinc-800/60 font-semibold">
               Similar existing tasks
             </p>
             <ul>
@@ -137,7 +137,7 @@ export default function BrainDump({ onStartPlanning }: { onStartPlanning: () => 
             <div className="mt-6 text-center">
               <button
                 onClick={onStartPlanning}
-                className="px-6 py-2 bg-accent hover:bg-accent/90 text-black font-medium rounded-lg cursor-pointer transition"
+                className="px-6 py-2.5 bg-accent hover:bg-accent/90 text-black font-semibold rounded-lg cursor-pointer transition-all duration-200 hover:shadow-lg hover:shadow-accent/20"
               >
                 Start planning →
               </button>

@@ -98,11 +98,11 @@ export default function Home({ onLogout }: { onLogout: () => void }) {
   }
 
   return (
-    <div className="h-full flex flex-col text-white">
-      <div className="drag shrink-0 h-10 flex items-center border-b border-zinc-900 pl-20 pr-4">
+    <div className="h-full flex flex-col text-white bg-surface">
+      <div className="drag shrink-0 h-11 flex items-center border-b border-zinc-900/60 pl-20 pr-4 bg-surface">
         <button
           onClick={() => setCollapsed((c) => !c)}
-          className="no-drag text-zinc-500 hover:text-white cursor-pointer p-1 rounded"
+          className="no-drag text-zinc-500 hover:text-white cursor-pointer p-1.5 rounded-md hover:bg-surface-raised transition-all duration-200"
           aria-label="Toggle sidebar"
           title="Toggle sidebar (⌘B)"
         >
@@ -110,14 +110,14 @@ export default function Home({ onLogout }: { onLogout: () => void }) {
         </button>
         <div className="flex-1" />
         {!online && (
-          <span className="no-drag text-xs px-2 py-0.5 rounded-full bg-amber-950/60 border border-amber-900 text-amber-300 flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+          <span className="no-drag text-xs px-2.5 py-1 rounded-full bg-amber-950/60 border border-amber-900/60 text-amber-300 flex items-center gap-1.5 font-medium">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
             Offline
             {pending > 0 && <span className="text-amber-200/70">· {pending} pending</span>}
           </span>
         )}
         {online && pending > 0 && (
-          <span className="no-drag text-xs px-2 py-0.5 rounded-full bg-accent/20 text-accent flex items-center gap-1.5">
+          <span className="no-drag text-xs px-2.5 py-1 rounded-full bg-accent/10 text-accent flex items-center gap-1.5 font-medium">
             <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
             Syncing · {pending}
           </span>
@@ -133,7 +133,7 @@ export default function Home({ onLogout }: { onLogout: () => void }) {
           collapsed={collapsed}
         />
 
-        <main className="flex-1 min-w-0">
+        <main className="flex-1 min-w-0 bg-surface">
           {view === 'brain' && <BrainDump onStartPlanning={() => setView('review')} />}
           {view === 'today' && <Today />}
           {view === 'review' && <WeeklyReview />}

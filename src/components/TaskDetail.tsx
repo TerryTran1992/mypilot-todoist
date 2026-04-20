@@ -70,8 +70,8 @@ export default function TaskDetail() {
         if (e.target === e.currentTarget) closeTask();
       }}
     >
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
-      <aside className="relative w-full max-w-md h-full bg-zinc-950 border-l border-zinc-800 shadow-2xl flex flex-col">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <aside className="relative w-full max-w-md h-full bg-surface border-l border-zinc-800/60 shadow-2xl flex flex-col">
         {resolved ? (
           <Body todo={resolved.todo} parentId={resolved.parentId} parentTitle={parentTitle} />
         ) : (
@@ -202,26 +202,26 @@ function Body({
 
   return (
     <>
-      <header className="border-b border-zinc-900">
+      <header className="border-b border-zinc-800/60">
         {isSubtask && (
           <button
             onClick={() => openTask(parentId!)}
-            className="flex items-center gap-1.5 px-5 pt-3 pb-1 text-xs text-zinc-500 hover:text-accent cursor-pointer transition"
+            className="flex items-center gap-1.5 px-5 pt-3 pb-1 text-xs text-zinc-500 hover:text-accent cursor-pointer transition-colors duration-200"
           >
             <Icon name="arrow-left" size={12} />
-            <span className="truncate max-w-[250px]">{parentTitle ?? 'Parent task'}</span>
+            <span className="truncate max-w-[250px] font-medium">{parentTitle ?? 'Parent task'}</span>
           </button>
         )}
         <div className="flex items-center justify-between px-5 py-3">
           <button
             onClick={() => handleToggle().catch(() => {})}
-            className={`flex items-center gap-2 text-xs uppercase tracking-wide cursor-pointer transition ${
+            className={`flex items-center gap-2 text-xs uppercase tracking-wide font-semibold cursor-pointer transition-all duration-200 ${
               todo.is_completed ? 'text-accent' : 'text-zinc-400 hover:text-white'
             }`}
           >
             <span
-              className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                todo.is_completed ? 'bg-accent border-accent' : 'border-zinc-600'
+              className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all duration-200 ${
+                todo.is_completed ? 'bg-accent border-accent' : 'border-zinc-600 hover:border-accent'
               }`}
             >
               {todo.is_completed && <Icon name="check" size={10} className="text-black" />}
@@ -230,7 +230,7 @@ function Body({
           </button>
           <button
             onClick={closeTask}
-            className="text-zinc-500 hover:text-white p-1 cursor-pointer"
+            className="text-zinc-500 hover:text-white p-1.5 rounded-md hover:bg-surface-raised cursor-pointer transition-all duration-200"
             aria-label="Close"
           >
             <Icon name="x" size={16} />
@@ -247,7 +247,7 @@ function Body({
             onKeyDown={(e) => {
               if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
             }}
-            className={`w-full bg-transparent text-xl font-semibold focus:outline-none ${
+            className={`w-full bg-transparent text-xl font-bold focus:outline-none transition-colors duration-200 ${
               todo.is_completed ? 'line-through text-zinc-500' : 'text-white'
             }`}
             placeholder="Title"
@@ -261,7 +261,7 @@ function Body({
             onBlur={commitContent}
             rows={4}
             placeholder="Anything you want to remember…"
-            className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:border-accent focus:outline-none resize-none"
+            className="w-full bg-surface-raised border border-zinc-800/60 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/20 resize-none transition-all duration-200"
           />
         </Field>
 
@@ -318,7 +318,7 @@ function Body({
             onChange={(e) => setDelegatedTo(e.target.value)}
             onBlur={commitDelegatedTo}
             placeholder="Name of person handling this"
-            className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm focus:border-accent focus:outline-none"
+            className="w-full bg-surface-raised border border-zinc-800/60 rounded-lg px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/20 transition-all duration-200"
           />
         </Field>
 
@@ -359,7 +359,7 @@ function Body({
               type="date"
               value={isoToDateInput(todo.deadline)}
               onChange={(e) => patch({ deadline: dateInputToIso(e.target.value) })}
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2 py-1.5 text-sm focus:border-accent focus:outline-none [color-scheme:dark]"
+              className="w-full bg-surface-raised border border-zinc-800/60 rounded-lg px-2 py-1.5 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/20 [color-scheme:dark] transition-all duration-200"
             />
           </Field>
           <Field label="Estimate (min)">
@@ -371,7 +371,7 @@ function Body({
                 const v = e.target.value === '' ? null : Math.max(0, Number(e.target.value));
                 patch({ estimated_minutes: v });
               }}
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2 py-1.5 text-sm focus:border-accent focus:outline-none"
+              className="w-full bg-surface-raised border border-zinc-800/60 rounded-lg px-2 py-1.5 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/20 transition-all duration-200"
             />
           </Field>
         </div>
@@ -380,7 +380,7 @@ function Body({
 
         {!isSubtask && <SubtaskList todoId={todo.id} isParentTemp={isTempId(todo.id)} />}
 
-        <div className="text-xs text-zinc-600 space-y-0.5 pt-2 border-t border-zinc-900">
+        <div className="text-xs text-zinc-600 space-y-0.5 pt-2 border-t border-zinc-800/60">
           <p>Created · {fmtDateTime(todo.created_at)}</p>
           {todo.completed_at && <p>Completed · {fmtDateTime(todo.completed_at)}</p>}
           {typeof todo.priority_score === 'number' && (
@@ -395,7 +395,7 @@ function Body({
         <Comments todoId={todo.id} />
       </div>
 
-      <footer className="px-5 py-3 border-t border-zinc-900 flex justify-between items-center">
+      <footer className="px-5 py-3 border-t border-zinc-800/60 flex justify-between items-center">
         <button
           onClick={handleDelete}
           className="text-sm text-red-400 hover:text-red-300 cursor-pointer flex items-center gap-1.5"
@@ -484,7 +484,7 @@ function Comments({ todoId }: { todoId: string }) {
   }
 
   return (
-    <section className="pt-4 border-t border-zinc-900">
+    <section className="pt-4 border-t border-zinc-800/60">
       <p className="text-[11px] uppercase tracking-wide text-zinc-500 mb-2">
         Comments {items && items.length > 0 && <span className="text-zinc-600">· {items.length}</span>}
       </p>
@@ -566,8 +566,8 @@ function Pills<T extends string>({
         <button
           key={opt}
           onClick={() => onChange(opt)}
-          className={`px-2 py-0.5 text-[11px] rounded-full cursor-pointer transition capitalize ${
-            value === opt ? color(opt) : 'bg-zinc-900 text-zinc-400 hover:text-white'
+          className={`px-2.5 py-0.5 text-[11px] font-semibold rounded-full cursor-pointer transition-all duration-200 capitalize ${
+            value === opt ? color(opt) : 'bg-surface-raised text-zinc-400 hover:text-white border border-zinc-800/40'
           }`}
         >
           {opt}

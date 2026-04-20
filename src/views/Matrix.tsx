@@ -203,10 +203,10 @@ export default function Matrix() {
 
   return (
     <div className="h-full flex flex-col">
-      <header className="flex items-center justify-between px-6 py-4 border-b border-zinc-800 gap-4">
+      <header className="flex items-center justify-between px-6 py-4 border-b border-zinc-800/60 gap-4">
         <div>
-          <h1 className="text-xl font-semibold">Eisenhower Matrix</h1>
-          <p className="text-xs text-zinc-500">Drag tasks into quadrants to decide priority</p>
+          <h1 className="font-heading text-3xl font-bold text-accent">Eisenhower Matrix</h1>
+          <p className="text-xs text-zinc-500 font-medium mt-0.5">Drag tasks into quadrants to decide priority</p>
         </div>
         <div className="relative shrink-0">
           <Icon name="search" size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
@@ -216,7 +216,7 @@ export default function Matrix() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search tasks…"
-            className="pl-8 pr-3 py-1 text-xs bg-zinc-900 border border-zinc-800 rounded-full focus:border-accent focus:outline-none w-56"
+            className="pl-8 pr-3 py-1.5 text-xs bg-surface-raised border border-zinc-800/60 rounded-full focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/20 w-56 transition-all duration-200"
           />
         </div>
       </header>

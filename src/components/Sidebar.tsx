@@ -56,35 +56,45 @@ export default function Sidebar({
 
   return (
     <aside
-      className={`shrink-0 h-full bg-zinc-950 border-r border-zinc-900 flex flex-col transition-all ${
+      className={`shrink-0 h-full bg-surface border-r border-zinc-900/80 flex flex-col transition-all duration-200 ${
         collapsed ? 'w-0 overflow-hidden' : 'w-56'
       }`}
     >
-      <nav className="flex-1 px-2 pt-3">
-        {items.map((item) => (
-          <button
-            key={item.id}
-            onClick={() => onView(item.id)}
-            className={`no-drag w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm cursor-pointer transition ${
-              view === item.id
-                ? 'bg-zinc-900 text-white'
-                : 'text-zinc-400 hover:text-white hover:bg-zinc-900/50'
-            }`}
-          >
-            <Icon name={item.icon} size={16} />
-            <span className="flex-1 text-left">{item.label}</span>
-            {counts[item.id] > 0 && (
-              <span className="text-[10px] text-zinc-500">{counts[item.id]}</span>
-            )}
-            <span className="text-[10px] text-zinc-600">{item.shortcut}</span>
-          </button>
-        ))}
+      <nav className="flex-1 px-2 pt-4 space-y-0.5">
+        {items.map((item) => {
+          const isActive = view === item.id;
+          return (
+            <button
+              key={item.id}
+              onClick={() => onView(item.id)}
+              className={`no-drag w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm cursor-pointer transition-all duration-200 relative ${
+                isActive
+                  ? 'bg-accent/10 text-accent'
+                  : 'text-zinc-400 hover:text-zinc-100 hover:bg-surface-raised'
+              }`}
+            >
+              {isActive && (
+                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-accent rounded-r" />
+              )}
+              <Icon name={item.icon} size={16} />
+              <span className="flex-1 text-left font-medium">{item.label}</span>
+              {counts[item.id] > 0 && (
+                <span className={`text-[10px] min-w-[18px] text-center px-1 py-0.5 rounded-full ${
+                  isActive ? 'bg-accent/20 text-accent' : 'bg-zinc-800 text-zinc-500'
+                }`}>
+                  {counts[item.id]}
+                </span>
+              )}
+              <span className="text-[10px] text-zinc-600 tabular-nums">{item.shortcut}</span>
+            </button>
+          );
+        })}
       </nav>
-      <div className="px-4 py-3 border-t border-zinc-900 text-xs text-zinc-500">
-        <p className="truncate mb-1">{userEmail}</p>
+      <div className="px-4 py-3 border-t border-zinc-900/80">
+        <p className="truncate text-xs text-zinc-500 mb-1.5 font-medium">{userEmail}</p>
         <button
           onClick={onLogout}
-          className="no-drag text-zinc-500 hover:text-white cursor-pointer transition"
+          className="no-drag text-xs text-zinc-500 hover:text-red-400 cursor-pointer transition-colors duration-200"
         >
           Sign out
         </button>

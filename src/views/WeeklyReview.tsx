@@ -147,11 +147,11 @@ export default function WeeklyReview() {
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <header className="px-6 py-4 border-b border-zinc-800 shrink-0">
+      <header className="px-6 py-4 border-b border-zinc-800/60 shrink-0">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-semibold">Weekly Review</h1>
-            <p className="text-xs text-zinc-500 mt-0.5">3-phase guided review — clear, reflect, plan ahead</p>
+            <h1 className="font-heading text-3xl font-bold text-accent">Weekly Review</h1>
+            <p className="text-xs text-zinc-500 font-medium mt-0.5">3-phase guided review — clear, reflect, plan ahead</p>
           </div>
           <div className="flex items-center gap-2">
             {streak > 0 && (

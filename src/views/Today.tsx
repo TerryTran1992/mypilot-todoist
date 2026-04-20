@@ -404,25 +404,25 @@ export default function Planner() {
 
   return (
     <div className="h-full flex flex-col">
-      <header className="flex items-center justify-between px-6 py-4 border-b border-zinc-800 gap-4">
+      <header className="flex items-center justify-between px-6 py-4 border-b border-zinc-800/60 gap-4">
         <div className="min-w-0">
           <div className="flex items-center gap-3">
-            <h1 className="text-xl font-semibold">
+            <h1 className="font-heading text-3xl font-bold text-accent">
               {day === 'today' ? 'Today' : 'Tomorrow'}
             </h1>
-            <div className="flex items-center bg-zinc-900 border border-zinc-800 rounded-full p-0.5">
+            <div className="flex items-center bg-surface-raised border border-zinc-800/60 rounded-full p-0.5">
               <button
                 onClick={() => setDay('today')}
-                className={`px-3 py-0.5 text-xs rounded-full cursor-pointer transition ${
-                  day === 'today' ? 'bg-accent text-black' : 'text-zinc-400 hover:text-white'
+                className={`px-3 py-1 text-xs font-semibold rounded-full cursor-pointer transition-all duration-200 ${
+                  day === 'today' ? 'bg-accent text-black shadow-sm' : 'text-zinc-400 hover:text-white'
                 }`}
               >
                 Today
               </button>
               <button
                 onClick={() => setDay('tomorrow')}
-                className={`px-3 py-0.5 text-xs rounded-full cursor-pointer transition ${
-                  day === 'tomorrow' ? 'bg-accent text-black' : 'text-zinc-400 hover:text-white'
+                className={`px-3 py-1 text-xs font-semibold rounded-full cursor-pointer transition-all duration-200 ${
+                  day === 'tomorrow' ? 'bg-accent text-black shadow-sm' : 'text-zinc-400 hover:text-white'
                 }`}
               >
                 Tomorrow

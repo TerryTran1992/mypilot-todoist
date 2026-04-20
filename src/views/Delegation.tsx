@@ -71,10 +71,10 @@ export default function Delegation() {
 
   return (
     <div className="h-full flex flex-col">
-      <header className="flex items-center justify-between px-6 py-4 border-b border-zinc-800">
+      <header className="flex items-center justify-between px-6 py-4 border-b border-zinc-800/60">
         <div>
-          <h1 className="text-xl font-semibold">Delegation</h1>
-          <p className="text-xs text-zinc-500">
+          <h1 className="font-heading text-3xl font-bold text-accent">Delegation</h1>
+          <p className="text-xs text-zinc-500 font-medium mt-0.5">
             {delegated.length} task{delegated.length === 1 ? '' : 's'} delegated
             {followUps > 0 && (
               <>

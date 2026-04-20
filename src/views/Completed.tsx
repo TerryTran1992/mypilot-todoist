@@ -55,10 +55,10 @@ export default function Completed() {
 
   return (
     <div className="h-full flex flex-col">
-      <header className="drag flex items-center justify-between px-6 py-4 border-b border-zinc-800">
+      <header className="drag flex items-center justify-between px-6 py-4 border-b border-zinc-800/60">
         <div>
-          <h1 className="text-xl font-semibold">Completed</h1>
-          <p className="text-xs text-zinc-500">
+          <h1 className="font-heading text-3xl font-bold text-accent">Completed</h1>
+          <p className="text-xs text-zinc-500 font-medium mt-0.5">
             {todayCount} done today · {done.length} all time
           </p>
         </div>
@@ -71,7 +71,7 @@ export default function Completed() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search…"
-            className="pl-8 pr-7 py-1 text-xs bg-zinc-900 border border-zinc-800 rounded-full focus:border-accent focus:outline-none w-48"
+            className="pl-8 pr-7 py-1.5 text-xs bg-surface-raised border border-zinc-800/60 rounded-full focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/20 w-48 transition-all duration-200"
           />
           {search && (
             <button
@@ -110,9 +110,9 @@ export default function Completed() {
         ) : (
           grouped.map(([day, items]) => (
             <section key={day}>
-              <div className="sticky top-0 bg-black/80 backdrop-blur px-6 py-2 border-b border-zinc-900 flex items-center justify-between">
-                <h2 className="text-xs uppercase tracking-wide text-zinc-500">{formatDay(day)}</h2>
-                <span className="text-xs text-zinc-600">{items.length}</span>
+              <div className="sticky top-0 bg-surface/90 backdrop-blur-md px-6 py-2.5 border-b border-zinc-800/40 flex items-center justify-between">
+                <h2 className="text-xs uppercase tracking-wide text-zinc-500 font-semibold">{formatDay(day)}</h2>
+                <span className="text-[10px] text-zinc-600 bg-zinc-800/60 px-1.5 py-0.5 rounded-full">{items.length}</span>
               </div>
               <ul>
                 {items.map((t) => (
