@@ -233,6 +233,14 @@ export async function reorderSubtasks(todoId: string, subtaskIds: string[]): Pro
   }
 }
 
+export function findSubtaskById(subId: string): { subtask: Todo; parentId: string } | null {
+  for (const [parentId, subs] of Object.entries(allCache)) {
+    const found = subs.find((s) => s.id === subId);
+    if (found) return { subtask: found, parentId };
+  }
+  return null;
+}
+
 export function clearSubtasksForTodo(todoId: string) {
   delete allCache[todoId];
   saveAllCache();

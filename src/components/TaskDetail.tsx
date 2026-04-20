@@ -1,6 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTodos, updateTodo, deleteTodo, toggleComplete } from '../store/todos';
-import { closeTask, useSelectedId } from '../store/selection';
+import { closeTask, openTask, useSelectedId } from '../store/selection';
+import {
+  findSubtaskById,
+  updateSubtask,
+  deleteSubtask,
+  toggleSubtask,
+  useSubtaskProgressListener,
+} from '../store/subtasks';
 import api, { ApiError, NetworkError } from '../lib/api';
 import { isTempId } from '../lib/sync';
 import { Category, DelegationStatus, EnergyType, Priority, Todo, TodoComment } from '../types';
@@ -37,9 +44,22 @@ function dateInputToIso(value: string) {
 export default function TaskDetail() {
   const id = useSelectedId();
   const { todos } = useTodos();
-  const todo = useMemo(() => (id ? todos.find((t) => t.id === id) ?? null : null), [id, todos]);
+  useSubtaskProgressListener();
+
+  const resolved = useMemo(() => {
+    if (!id) return null;
+    const mainTodo = todos.find((t) => t.id === id);
+    if (mainTodo) return { todo: mainTodo, parentId: null as string | null };
+    const sub = findSubtaskById(id);
+    if (sub) return { todo: sub.subtask, parentId: sub.parentId };
+    return null;
+  }, [id, todos]);
 
   if (!id) return null;
+
+  const parentTitle = resolved?.parentId
+    ? todos.find((t) => t.id === resolved.parentId)?.title ?? null
+    : null;
 
   return (
     <div
@@ -50,7 +70,11 @@ export default function TaskDetail() {
     >
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
       <aside className="relative w-full max-w-md h-full bg-zinc-950 border-l border-zinc-800 shadow-2xl flex flex-col">
-        {todo ? <Body todo={todo} /> : <Missing />}
+        {resolved ? (
+          <Body todo={resolved.todo} parentId={resolved.parentId} parentTitle={parentTitle} />
+        ) : (
+          <Missing />
+        )}
       </aside>
     </div>
   );
@@ -66,7 +90,16 @@ function Missing() {
   );
 }
 
-function Body({ todo }: { todo: Todo }) {
+function Body({
+  todo,
+  parentId,
+  parentTitle,
+}: {
+  todo: Todo;
+  parentId: string | null;
+  parentTitle: string | null;
+}) {
+  const isSubtask = !!parentId;
   const [title, setTitle] = useState(todo.title);
   const [content, setContent] = useState(todo.content ?? '');
   const [delegatedTo, setDelegatedTo] = useState(todo.delegated_to ?? '');
@@ -100,7 +133,11 @@ function Body({ todo }: { todo: Todo }) {
   async function patch(p: Partial<Todo>) {
     setSavingErr(null);
     try {
-      await updateTodo(todo.id, p);
+      if (isSubtask) {
+        await updateSubtask(parentId!, todo.id, p);
+      } else {
+        await updateTodo(todo.id, p);
+      }
     } catch (err) {
       setSavingErr(err instanceof Error ? err.message : 'Save failed');
     }
@@ -136,39 +173,67 @@ function Body({ todo }: { todo: Todo }) {
   }
 
   async function handleDelete() {
-    closeTask();
-    try {
-      await deleteTodo(todo.id);
-    } catch (err) {
-      setSavingErr(err instanceof Error ? err.message : 'Delete failed');
+    if (isSubtask) {
+      closeTask();
+      try {
+        await deleteSubtask(parentId!, todo.id);
+      } catch (err) {
+        setSavingErr(err instanceof Error ? err.message : 'Delete failed');
+      }
+    } else {
+      closeTask();
+      try {
+        await deleteTodo(todo.id);
+      } catch (err) {
+        setSavingErr(err instanceof Error ? err.message : 'Delete failed');
+      }
+    }
+  }
+
+  async function handleToggle() {
+    if (isSubtask) {
+      await toggleSubtask(parentId!, todo);
+    } else {
+      await toggleComplete(todo);
     }
   }
 
   return (
     <>
-      <header className="flex items-center justify-between px-5 py-3 border-b border-zinc-900">
-        <button
-          onClick={() => toggleComplete(todo).catch(() => {})}
-          className={`flex items-center gap-2 text-xs uppercase tracking-wide cursor-pointer transition ${
-            todo.is_completed ? 'text-accent' : 'text-zinc-400 hover:text-white'
-          }`}
-        >
-          <span
-            className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-              todo.is_completed ? 'bg-accent border-accent' : 'border-zinc-600'
+      <header className="border-b border-zinc-900">
+        {isSubtask && (
+          <button
+            onClick={() => openTask(parentId!)}
+            className="flex items-center gap-1.5 px-5 pt-3 pb-1 text-xs text-zinc-500 hover:text-accent cursor-pointer transition"
+          >
+            <Icon name="arrow-left" size={12} />
+            <span className="truncate max-w-[250px]">{parentTitle ?? 'Parent task'}</span>
+          </button>
+        )}
+        <div className="flex items-center justify-between px-5 py-3">
+          <button
+            onClick={() => handleToggle().catch(() => {})}
+            className={`flex items-center gap-2 text-xs uppercase tracking-wide cursor-pointer transition ${
+              todo.is_completed ? 'text-accent' : 'text-zinc-400 hover:text-white'
             }`}
           >
-            {todo.is_completed && <Icon name="check" size={10} className="text-black" />}
-          </span>
-          {todo.is_completed ? 'Completed' : 'Mark complete'}
-        </button>
-        <button
-          onClick={closeTask}
-          className="text-zinc-500 hover:text-white p-1 cursor-pointer"
-          aria-label="Close"
-        >
-          <Icon name="x" size={16} />
-        </button>
+            <span
+              className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                todo.is_completed ? 'bg-accent border-accent' : 'border-zinc-600'
+              }`}
+            >
+              {todo.is_completed && <Icon name="check" size={10} className="text-black" />}
+            </span>
+            {todo.is_completed ? 'Completed' : 'Mark complete'}
+          </button>
+          <button
+            onClick={closeTask}
+            className="text-zinc-500 hover:text-white p-1 cursor-pointer"
+            aria-label="Close"
+          >
+            <Icon name="x" size={16} />
+          </button>
+        </div>
       </header>
 
       <div className="flex-1 overflow-y-auto p-5 space-y-5">
