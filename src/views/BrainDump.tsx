@@ -1,11 +1,7 @@
 import { FormEvent, useEffect, useRef, useState } from 'react';
-import Fuse from 'fuse.js';
 import { createTodo, deleteTodo, useTodos } from '../store/todos';
 import Icon from '../components/Icon';
-
-function stripDiacritics(s: string): string {
-  return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D');
-}
+import { stripDiacritics } from '../lib/fuzzy';
 
 interface MatchItem { id: string; title: string; is_completed: boolean }
 type FuseResult = { item: MatchItem; score?: number };
@@ -15,37 +11,28 @@ function useDebouncedFuzzy(
   query: string,
   delay = 200,
 ) {
-  const fuseRef = useRef<Fuse<MatchItem>>();
-  const todosRef = useRef<MatchItem[]>([]);
   const [results, setResults] = useState<FuseResult[]>([]);
 
-  if (todos !== todosRef.current) {
-    todosRef.current = todos;
-    fuseRef.current = new Fuse(todos, {
-      keys: ['title'],
-      threshold: 0.4,
-      includeScore: true,
-      ignoreLocation: true,
-      getFn: (obj: any, path: string | string[]) => {
-        const keys = Array.isArray(path) ? path : path.split('.');
-        let value: any = obj;
-        for (const k of keys) { if (value == null) return ''; value = value[k]; }
-        return typeof value === 'string' ? stripDiacritics(value) : (value ?? '');
-      },
-    });
-  }
-
   useEffect(() => {
-    const q = stripDiacritics(query.trim());
+    const q = stripDiacritics(query.trim()).toLowerCase();
     if (q.length < 3) {
       setResults([]);
       return;
     }
     const timer = setTimeout(() => {
-      setResults(fuseRef.current?.search(q, { limit: 5 }) ?? []);
+      const matches = todos
+        .map((t) => {
+          const normalized = stripDiacritics(t.title).toLowerCase();
+          if (!normalized.includes(q)) return null;
+          const score = 1 - (q.length / normalized.length);
+          return { item: t, score };
+        })
+        .filter(Boolean)
+        .slice(0, 5) as FuseResult[];
+      setResults(matches);
     }, delay);
     return () => clearTimeout(timer);
-  }, [query, delay]);
+  }, [query, delay, todos]);
 
   return results;
 }

@@ -1,25 +1,24 @@
 import { useRef, useMemo } from 'react';
 import Fuse, { type IFuseOptions } from 'fuse.js';
 
-function stripDiacritics(s: string): string {
+export function stripDiacritics(s: string): string {
   return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D');
 }
 
 const DEFAULT_OPTIONS: IFuseOptions<any> = {
   threshold: 0.4,
   ignoreLocation: true,
-  getFn: (obj: any, path: string | string[]) => {
-    const keys = Array.isArray(path) ? path : path.split('.');
-    let value: any = obj;
-    for (const k of keys) {
-      if (value == null) return '';
-      value = value[k];
-    }
-    if (typeof value === 'string') return stripDiacritics(value);
-    if (Array.isArray(value)) return value.map((v) => (typeof v === 'string' ? stripDiacritics(v) : v));
-    return value ?? '';
-  },
 };
+
+function getNestedValue(obj: any, key: string): string {
+  const parts = key.split('.');
+  let val: any = obj;
+  for (const p of parts) {
+    if (val == null) return '';
+    val = val[p];
+  }
+  return typeof val === 'string' ? val : '';
+}
 
 export function useFuzzyFilter<T>(
   items: T[],
@@ -36,9 +35,23 @@ export function useFuzzyFilter<T>(
   }
 
   return useMemo(() => {
-    const q = stripDiacritics(search.trim());
-    if (!q) return items;
+    const raw = search.trim();
+    if (!raw) return items;
+
+    const normalized = stripDiacritics(raw).toLowerCase();
+
+    // Diacritics-normalized substring match (reliable for Vietnamese)
+    const substringMatches = items.filter((item) =>
+      keys.some((key) => {
+        const val = getNestedValue(item, key);
+        return stripDiacritics(val).toLowerCase().includes(normalized);
+      }),
+    );
+
+    if (substringMatches.length > 0) return substringMatches;
+
+    // Fallback to fuse.js fuzzy match for typo tolerance
     if (!fuseRef.current) return items;
-    return fuseRef.current.search(q).map((r) => r.item);
-  }, [items, search]);
+    return fuseRef.current.search(raw).map((r) => r.item);
+  }, [items, search, keys]);
 }
