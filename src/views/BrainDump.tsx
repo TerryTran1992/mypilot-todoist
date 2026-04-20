@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import Fuse from 'fuse.js';
-import { createTodo, useTodos } from '../store/todos';
+import { createTodo, deleteTodo, useTodos } from '../store/todos';
+import Icon from '../components/Icon';
 
 interface MatchItem { id: string; title: string; is_completed: boolean }
 type FuseResult = { item: MatchItem; score?: number };
@@ -117,9 +118,19 @@ export default function BrainDump({ onStartPlanning }: { onStartPlanning: () => 
               {captured.map((t) => (
                 <li
                   key={t.id}
-                  className="px-4 py-2 bg-zinc-900/50 rounded-lg text-sm text-zinc-300"
+                  className="px-4 py-2 bg-zinc-900/50 rounded-lg text-sm text-zinc-300 flex items-center justify-between group"
                 >
-                  {t.title}
+                  <span>{t.title}</span>
+                  <button
+                    onClick={async () => {
+                      await deleteTodo(t.id);
+                      setSessionIds((ids) => ids.filter((id) => id !== t.id));
+                    }}
+                    className="opacity-0 group-hover:opacity-100 text-zinc-500 hover:text-red-400 cursor-pointer transition"
+                    title="Remove task"
+                  >
+                    <Icon name="x" size={14} />
+                  </button>
                 </li>
               ))}
             </ul>
