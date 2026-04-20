@@ -1,19 +1,13 @@
-import { FormEvent, useMemo, useRef, useState } from 'react';
-import { createTodo, useTodos } from '../store/todos';
+import { useMemo, useRef, useState } from 'react';
+import { useTodos } from '../store/todos';
 import TodoRow from '../components/TodoRow';
 import Icon from '../components/Icon';
 import { byScore } from '../lib/sort';
 
-type Priority = 'low' | 'medium' | 'high' | 'urgent';
 type Filter = 'all' | 'open' | 'done';
-
-const PRIORITIES: Priority[] = ['urgent', 'high', 'medium', 'low'];
 
 export default function Inbox() {
   const { todos, loading, error, setError } = useTodos();
-  const [newTitle, setNewTitle] = useState('');
-  const [newPriority, setNewPriority] = useState<Priority>('medium');
-  const [adding, setAdding] = useState(false);
   const [filter, setFilter] = useState<Filter>('open');
   const [search, setSearch] = useState('');
   const searchRef = useRef<HTMLInputElement>(null);
@@ -33,22 +27,6 @@ export default function Inbox() {
       });
   }, [todos, filter, search]);
 
-  async function handleAdd(e: FormEvent) {
-    e.preventDefault();
-    const title = newTitle.trim();
-    if (!title) return;
-    setAdding(true);
-    try {
-      await createTodo({ title, priority: newPriority });
-      setNewTitle('');
-      setNewPriority('medium');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to add');
-    } finally {
-      setAdding(false);
-    }
-  }
-
   return (
     <div className="h-full flex flex-col">
       <header className="drag flex items-center justify-between px-6 py-4 border-b border-zinc-800">
@@ -59,39 +37,6 @@ export default function Inbox() {
           </p>
         </div>
       </header>
-
-      <form onSubmit={handleAdd} className="px-6 py-4 border-b border-zinc-800 space-y-2">
-        <input
-          type="text"
-          value={newTitle}
-          onChange={(e) => setNewTitle(e.target.value)}
-          placeholder="Add a task and press Enter…"
-          disabled={adding}
-          className="w-full px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-lg focus:border-accent focus:outline-none disabled:opacity-50"
-        />
-        <div className="flex gap-1">
-          {PRIORITIES.map((p) => (
-            <button
-              key={p}
-              type="button"
-              onClick={() => setNewPriority(p)}
-              className={`px-2 py-0.5 text-[10px] uppercase rounded-full cursor-pointer transition ${
-                newPriority === p
-                  ? p === 'urgent'
-                    ? 'bg-red-900 text-red-200'
-                    : p === 'high'
-                    ? 'bg-orange-900 text-orange-200'
-                    : p === 'medium'
-                    ? 'bg-zinc-700 text-white'
-                    : 'bg-zinc-800 text-zinc-300'
-                  : 'bg-zinc-900 text-zinc-500 hover:text-zinc-200'
-              }`}
-            >
-              {p}
-            </button>
-          ))}
-        </div>
-      </form>
 
       <div className="flex items-center gap-2 px-6 py-3 border-b border-zinc-800">
         {(['open', 'all', 'done'] as Filter[]).map((f) => (
@@ -135,7 +80,7 @@ export default function Inbox() {
           <p className="p-6 text-zinc-500 text-sm">Loading…</p>
         ) : visible.length === 0 ? (
           <p className="p-6 text-zinc-500 text-sm">
-            {todos.length === 0 ? 'No todos yet. Add one above.' : 'Nothing matches.'}
+            {todos.length === 0 ? 'No todos yet.' : 'Nothing matches.'}
           </p>
         ) : (
           <ul>
