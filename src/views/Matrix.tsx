@@ -10,9 +10,9 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
-import { useTodos, toggleComplete } from '../store/todos';
+import { useTodos, toggleComplete, updateTodo } from '../store/todos';
 import { openTask } from '../store/selection';
-import { Todo } from '../types';
+import { Priority, Todo } from '../types';
 import {
   Quadrant,
   clearMatrixFor,
@@ -62,6 +62,13 @@ const QUADRANTS: QuadrantDef[] = [
     bg: 'bg-zinc-950',
   },
 ];
+
+const QUADRANT_TO_PRIORITY: Record<Quadrant, Priority> = {
+  do: 'urgent',
+  schedule: 'high',
+  delegate: 'medium',
+  eliminate: 'low',
+};
 
 const POOL_ID = 'matrix-pool';
 
@@ -174,7 +181,11 @@ export default function Matrix() {
     if (target === POOL_ID) {
       setMatrixAssignment(todoId, null);
     } else if (QUADRANTS.some((q) => q.id === target)) {
-      setMatrixAssignment(todoId, target as Quadrant);
+      const quadrant = target as Quadrant;
+      setMatrixAssignment(todoId, quadrant);
+      updateTodo(todoId, { priority: QUADRANT_TO_PRIORITY[quadrant] }).catch(() => {
+        setError('Failed to sync priority');
+      });
     }
   }
 
