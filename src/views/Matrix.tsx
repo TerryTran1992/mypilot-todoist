@@ -12,7 +12,7 @@ import {
 } from '@dnd-kit/core';
 import { useTodos, toggleComplete, updateTodo } from '../store/todos';
 import { openTask } from '../store/selection';
-import { Priority, Todo } from '../types';
+import { EnergyType, Priority, Todo } from '../types';
 import {
   Quadrant,
   clearMatrixFor,
@@ -68,6 +68,13 @@ const QUADRANT_TO_PRIORITY: Record<Quadrant, Priority> = {
   schedule: 'high',
   delegate: 'medium',
   eliminate: 'low',
+};
+
+const DEFAULT_ENERGY: Record<Quadrant, EnergyType> = {
+  do: 'deep_focus',
+  schedule: 'deep_focus',
+  delegate: 'quick_win',
+  eliminate: 'quick_win',
 };
 
 const POOL_ID = 'matrix-pool';
@@ -183,7 +190,10 @@ export default function Matrix() {
     } else if (QUADRANTS.some((q) => q.id === target)) {
       const quadrant = target as Quadrant;
       setMatrixAssignment(todoId, quadrant);
-      updateTodo(todoId, { priority: QUADRANT_TO_PRIORITY[quadrant] }).catch(() => {
+      const todo = todos.find((t) => t.id === todoId);
+      const patch: Partial<Todo> = { priority: QUADRANT_TO_PRIORITY[quadrant] };
+      if (!todo?.energy_type) patch.energy_type = DEFAULT_ENERGY[quadrant];
+      updateTodo(todoId, patch).catch(() => {
         setError('Failed to sync priority');
       });
     }
