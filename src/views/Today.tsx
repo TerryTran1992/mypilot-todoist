@@ -604,7 +604,7 @@ export default function Planner() {
                 )}
                 {unlabeledCount > 0 && (
                   <p className="text-[11px] text-amber-400">
-                    {unlabeledCount} task{unlabeledCount === 1 ? '' : 's'} need sizing in Weekly (⌘3).
+                    {unlabeledCount} task{unlabeledCount === 1 ? '' : 's'} need sizing — open Weekly Review (⌘3).
                   </p>
                 )}
               </div>
@@ -614,7 +614,7 @@ export default function Planner() {
                     {filterSlot || search
                       ? 'No matches.'
                       : unlabeledCount > 0
-                      ? 'Nothing labeled left. Open Weekly Planner (⌘3) to size your tasks.'
+                      ? 'Nothing labeled left. Open Weekly Review (⌘3) to process tasks.'
                       : 'All planned.'}
                   </p>
                 ) : (

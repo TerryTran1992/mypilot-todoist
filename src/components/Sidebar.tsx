@@ -1,22 +1,21 @@
 import { useTodos } from '../store/todos';
 import Icon from './Icon';
 
-export type View = 'brain' | 'today' | 'weekly' | 'review' | 'matrix' | 'delegation' | 'inbox' | 'completed';
+export type View = 'brain' | 'today' | 'review' | 'matrix' | 'delegation' | 'inbox' | 'completed';
 
 const items: {
   id: View;
   label: string;
-  icon: 'brain' | 'calendar' | 'zap' | 'clipboard-check' | 'grid' | 'users' | 'inbox' | 'check';
+  icon: 'brain' | 'calendar' | 'clipboard-check' | 'grid' | 'users' | 'inbox' | 'check';
   shortcut: string;
 }[] = [
   { id: 'brain', label: 'Brain Dump', icon: 'brain', shortcut: '⌘1' },
   { id: 'today', label: 'Today', icon: 'calendar', shortcut: '⌘2' },
-  { id: 'weekly', label: 'Weekly Planner', icon: 'zap', shortcut: '⌘3' },
-  { id: 'review', label: 'Weekly Review', icon: 'clipboard-check', shortcut: '⌘4' },
-  { id: 'matrix', label: 'Matrix', icon: 'grid', shortcut: '⌘5' },
-  { id: 'delegation', label: 'Delegation', icon: 'users', shortcut: '⌘6' },
-  { id: 'inbox', label: 'Inbox', icon: 'inbox', shortcut: '⌘7' },
-  { id: 'completed', label: 'Completed', icon: 'check', shortcut: '⌘8' },
+  { id: 'review', label: 'Weekly Review', icon: 'clipboard-check', shortcut: '⌘3' },
+  { id: 'matrix', label: 'Matrix', icon: 'grid', shortcut: '⌘4' },
+  { id: 'delegation', label: 'Delegation', icon: 'users', shortcut: '⌘5' },
+  { id: 'inbox', label: 'Inbox', icon: 'inbox', shortcut: '⌘6' },
+  { id: 'completed', label: 'Completed', icon: 'check', shortcut: '⌘7' },
 ];
 
 export default function Sidebar({
@@ -41,8 +40,6 @@ export default function Sidebar({
     (t) => !t.is_completed && t.time_block_date?.slice(0, 10) === today,
   ).length;
 
-  const weeklyCount = todos.filter((t) => !t.is_completed && !t.estimated_minutes).length;
-
   const delegationCount = todos.filter(
     (t) => t.delegated_to && t.delegation_status && t.delegation_status !== 'done',
   ).length;
@@ -50,7 +47,6 @@ export default function Sidebar({
   const counts: Record<View, number> = {
     brain: 0,
     today: todayCount,
-    weekly: weeklyCount,
     review: 0,
     matrix: 0,
     delegation: delegationCount,

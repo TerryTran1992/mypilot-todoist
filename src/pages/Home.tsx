@@ -4,7 +4,6 @@ import Sidebar, { View } from '../components/Sidebar';
 import QuickCapture from '../components/QuickCapture';
 import BrainDump from '../views/BrainDump';
 import Today from '../views/Today';
-import Weekly from '../views/Weekly';
 import WeeklyReview from '../views/WeeklyReview';
 import Matrix from '../views/Matrix';
 import Delegation from '../views/Delegation';
@@ -22,7 +21,7 @@ export default function Home({ onLogout }: { onLogout: () => void }) {
   const user = getUser();
   const [view, setView] = useState<View>(() => {
     const stored = localStorage.getItem(LAST_VIEW_KEY) as string | null;
-    const valid: View[] = ['brain', 'today', 'weekly', 'review', 'matrix', 'delegation', 'inbox', 'completed'];
+    const valid: View[] = ['brain', 'today', 'review', 'matrix', 'delegation', 'inbox', 'completed'];
     return (valid.includes(stored as View) ? (stored as View) : 'today') as View;
   });
   const [collapsed, setCollapsed] = useState<boolean>(() => localStorage.getItem(SIDEBAR_KEY) === '1');
@@ -55,25 +54,21 @@ export default function Home({ onLogout }: { onLogout: () => void }) {
           break;
         case '3':
           e.preventDefault();
-          setView('weekly');
+          setView('review');
           break;
         case '4':
           e.preventDefault();
-          setView('review');
+          setView('matrix');
           break;
         case '5':
           e.preventDefault();
-          setView('matrix');
+          setView('delegation');
           break;
         case '6':
           e.preventDefault();
-          setView('delegation');
-          break;
-        case '7':
-          e.preventDefault();
           setView('inbox');
           break;
-        case '8':
+        case '7':
           e.preventDefault();
           setView('completed');
           break;
@@ -139,9 +134,8 @@ export default function Home({ onLogout }: { onLogout: () => void }) {
         />
 
         <main className="flex-1 min-w-0">
-          {view === 'brain' && <BrainDump onStartPlanning={() => setView('weekly')} />}
+          {view === 'brain' && <BrainDump onStartPlanning={() => setView('review')} />}
           {view === 'today' && <Today />}
-          {view === 'weekly' && <Weekly />}
           {view === 'review' && <WeeklyReview />}
           {view === 'matrix' && <Matrix />}
           {view === 'delegation' && <Delegation />}
