@@ -169,7 +169,9 @@ function setupAutoUpdate() {
       title: 'Update ready',
       message: `Version ${info.version} downloaded. Restart to install.`,
     });
-    if (res.response === 0) autoUpdater.quitAndInstall();
+    if (res.response === 0) {
+      setImmediate(() => autoUpdater.quitAndInstall(true, true));
+    }
   });
 
   autoUpdater.on('error', (err) => {
