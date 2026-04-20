@@ -5,6 +5,7 @@ import { enqueue, isTempId, loadQueue, remapInQueue, saveQueue } from '../lib/sy
 import { remapLocalId } from '../lib/local';
 import { isOnline, subscribe as subscribeNetwork } from '../lib/network';
 import { getToken } from '../lib/auth';
+import { clearSubtasksForTodo, completeAllSubtasks } from './subtasks';
 
 const CACHE_KEY = 'mypilot_todos_cache';
 
@@ -141,6 +142,7 @@ export async function updateTodo(id: string, patch: Partial<Todo>) {
 export async function deleteTodo(id: string) {
   const prev = cache;
   setCache(cache.filter((t) => t.id !== id));
+  clearSubtasksForTodo(id);
 
   if (isTempId(id)) {
     // If the create is still queued, remove it; nothing to delete on the server.
@@ -164,6 +166,7 @@ export async function deleteTodo(id: string) {
 
 export async function toggleComplete(t: Todo) {
   const nextCompleted = !t.is_completed;
+  if (nextCompleted) completeAllSubtasks(t.id);
   return updateTodo(t.id, {
     is_completed: nextCompleted,
     completed_at: nextCompleted ? new Date().toISOString() : null,

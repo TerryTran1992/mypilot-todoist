@@ -5,6 +5,7 @@ import api, { ApiError, NetworkError } from '../lib/api';
 import { isTempId } from '../lib/sync';
 import { Category, DelegationStatus, EnergyType, Priority, Todo, TodoComment } from '../types';
 import Icon from './Icon';
+import SubtaskList from './SubtaskList';
 
 const PRIORITIES: Priority[] = ['urgent', 'high', 'medium', 'low'];
 const DELEGATION_STATUSES: { id: DelegationStatus; label: string }[] = [
@@ -309,6 +310,8 @@ function Body({ todo }: { todo: Todo }) {
         </div>
 
         {savingErr && <p className="text-red-400 text-sm">{savingErr}</p>}
+
+        <SubtaskList todoId={todo.id} isParentTemp={isTempId(todo.id)} />
 
         <div className="text-xs text-zinc-600 space-y-0.5 pt-2 border-t border-zinc-900">
           <p>Created · {fmtDateTime(todo.created_at)}</p>

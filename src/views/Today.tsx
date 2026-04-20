@@ -16,6 +16,7 @@ import { EnergyType, Todo } from '../types';
 import { DailyPlan, getPlan, setPlan, todayKey, tomorrowKey } from '../lib/local';
 import { byScore } from '../lib/sort';
 import Icon from '../components/Icon';
+import SubtaskProgress from '../components/SubtaskProgress';
 
 type Slot = 'big' | 'medium' | 'small';
 const POOL_ID = 'planner-pool';
@@ -119,6 +120,7 @@ function Card({ t, onToggle }: { t: Todo; onToggle: (t: Todo) => void }) {
       >
         {t.title}
       </span>
+      <SubtaskProgress todoId={t.id} />
       <EstimateBadge minutes={t.estimated_minutes} />
     </div>
   );

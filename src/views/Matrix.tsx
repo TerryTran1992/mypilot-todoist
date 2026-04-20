@@ -21,6 +21,7 @@ import {
 } from '../lib/local';
 import { useLocalStore } from '../lib/useLocalStore';
 import Icon from '../components/Icon';
+import SubtaskProgress from '../components/SubtaskProgress';
 import { byScore } from '../lib/sort';
 
 type QuadrantDef = {
@@ -92,6 +93,7 @@ function Card({ t, onToggle }: { t: Todo; onToggle: (t: Todo) => void }) {
       >
         {t.title}
       </span>
+      <SubtaskProgress todoId={t.id} />
     </div>
   );
 }

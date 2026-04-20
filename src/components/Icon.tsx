@@ -13,7 +13,8 @@ type IconProps = {
     | 'sidebar'
     | 'chevron'
     | 'users'
-    | 'arrow-right';
+    | 'arrow-right'
+    | 'grip-vertical';
   size?: number;
   className?: string;
 };
@@ -132,6 +133,17 @@ export default function Icon({ name, size = 18, className }: IconProps) {
         <svg {...common}>
           <line x1="5" y1="12" x2="19" y2="12" />
           <polyline points="12 5 19 12 12 19" />
+        </svg>
+      );
+    case 'grip-vertical':
+      return (
+        <svg {...common}>
+          <circle cx="9" cy="6" r="1" fill="currentColor" stroke="none" />
+          <circle cx="15" cy="6" r="1" fill="currentColor" stroke="none" />
+          <circle cx="9" cy="12" r="1" fill="currentColor" stroke="none" />
+          <circle cx="15" cy="12" r="1" fill="currentColor" stroke="none" />
+          <circle cx="9" cy="18" r="1" fill="currentColor" stroke="none" />
+          <circle cx="15" cy="18" r="1" fill="currentColor" stroke="none" />
         </svg>
       );
   }

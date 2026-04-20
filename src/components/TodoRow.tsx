@@ -2,6 +2,7 @@ import { Todo } from '../types';
 import Icon from './Icon';
 import { deleteTodo, toggleComplete } from '../store/todos';
 import { openTask } from '../store/selection';
+import SubtaskProgress from './SubtaskProgress';
 
 export default function TodoRow({ t, onError }: { t: Todo; onError: (msg: string) => void }) {
   async function handleToggle() {
@@ -40,6 +41,8 @@ export default function TodoRow({ t, onError }: { t: Todo; onError: (msg: string
       >
         {t.title}
       </button>
+
+      <SubtaskProgress todoId={t.id} todo={t} />
 
       {t.priority !== 'medium' && (
         <span

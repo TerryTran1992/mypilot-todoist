@@ -36,6 +36,9 @@ export type Todo = {
   delegation_status?: DelegationStatus | null;
   delegated_at?: string | null;
   follow_up_days?: number | null;
+  parent_id?: string | null;
+  subtask_count?: number;
+  subtask_completed_count?: number;
 };
 
 export type DelegationStatus = 'delegated' | 'in_progress' | 'done';
