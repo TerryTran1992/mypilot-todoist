@@ -1,5 +1,38 @@
 import { FormEvent, useEffect, useRef, useState } from 'react';
+import Fuse from 'fuse.js';
 import { createTodo, useTodos } from '../store/todos';
+
+interface MatchItem { id: string; title: string; is_completed: boolean }
+type FuseResult = { item: MatchItem; score?: number };
+
+function useDebouncedFuzzy(
+  todos: MatchItem[],
+  query: string,
+  delay = 200,
+) {
+  const fuseRef = useRef<Fuse<MatchItem>>();
+  const todosLenRef = useRef(0);
+  const [results, setResults] = useState<FuseResult[]>([]);
+
+  if (todos.length !== todosLenRef.current) {
+    todosLenRef.current = todos.length;
+    fuseRef.current = new Fuse(todos, { keys: ['title'], threshold: 0.4, includeScore: true });
+  }
+
+  useEffect(() => {
+    const q = query.trim();
+    if (q.length < 3) {
+      setResults([]);
+      return;
+    }
+    const timer = setTimeout(() => {
+      setResults(fuseRef.current?.search(q, { limit: 5 }) ?? []);
+    }, delay);
+    return () => clearTimeout(timer);
+  }, [query, delay]);
+
+  return results;
+}
 
 export default function BrainDump({ onStartPlanning }: { onStartPlanning: () => void }) {
   const { todos } = useTodos();
@@ -7,6 +40,8 @@ export default function BrainDump({ onStartPlanning }: { onStartPlanning: () => 
   const [busy, setBusy] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const [sessionIds, setSessionIds] = useState<string[]>([]);
+
+  const matches = useDebouncedFuzzy(todos, title, 150);
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -48,6 +83,29 @@ export default function BrainDump({ onStartPlanning }: { onStartPlanning: () => 
             className="w-full px-6 py-4 text-lg bg-zinc-900 border border-zinc-800 rounded-2xl focus:border-accent focus:outline-none text-white placeholder-zinc-500"
           />
         </form>
+
+        {matches.length > 0 && (
+          <div className="mt-2 bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
+            <p className="px-4 py-2 text-[11px] uppercase tracking-wider text-zinc-500 border-b border-zinc-800">
+              Similar existing tasks
+            </p>
+            <ul>
+              {matches.map(({ item, score }) => (
+                <li
+                  key={item.id}
+                  className="px-4 py-2 text-sm text-zinc-300 border-b border-zinc-800/50 last:border-b-0 flex items-center justify-between"
+                >
+                  <span className={item.is_completed ? 'line-through text-zinc-600' : ''}>
+                    {item.title}
+                  </span>
+                  <span className="text-[10px] text-zinc-600 ml-2 shrink-0">
+                    {Math.round((1 - (score ?? 0)) * 100)}% match
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {captured.length > 0 && (
           <div className="mt-10">
