@@ -13,10 +13,10 @@ export function useFuzzyFilter<T>(
   options?: Partial<IFuseOptions<T>>,
 ): T[] {
   const fuseRef = useRef<Fuse<T>>();
-  const countRef = useRef(0);
+  const itemsRef = useRef<T[]>([]);
 
-  if (items.length !== countRef.current) {
-    countRef.current = items.length;
+  if (items !== itemsRef.current) {
+    itemsRef.current = items;
     fuseRef.current = new Fuse(items, { ...DEFAULT_OPTIONS, keys, ...options });
   }
 
