@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
+import Fuse from 'fuse.js';
 import { useTodos } from '../store/todos';
 import TodoRow from '../components/TodoRow';
 import Icon from '../components/Icon';
@@ -32,12 +33,17 @@ export default function Completed() {
     [todos],
   );
 
+  const fuseRef = useRef<Fuse<(typeof done)[0]>>();
+  const fuseCountRef = useRef(0);
+  if (done.length !== fuseCountRef.current) {
+    fuseCountRef.current = done.length;
+    fuseRef.current = new Fuse(done, { keys: ['title', 'content'], threshold: 0.4, ignoreLocation: true });
+  }
   const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q = search.trim();
     if (!q) return done;
-    return done.filter(
-      (t) => t.title.toLowerCase().includes(q) || t.content?.toLowerCase().includes(q),
-    );
+    if (!fuseRef.current) return done;
+    return fuseRef.current.search(q).map((r) => r.item);
   }, [done, search]);
 
   const grouped = useMemo(() => {

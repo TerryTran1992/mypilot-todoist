@@ -4,6 +4,7 @@ import { openTask } from '../store/selection';
 import { EnergyType, Todo } from '../types';
 import Icon from '../components/Icon';
 import { byScore } from '../lib/sort';
+import { useFuzzyFilter } from '../lib/fuzzy';
 
 type SizeKey = 'big' | 'medium' | 'small';
 
@@ -64,12 +65,8 @@ export default function Weekly() {
   const unlabeled = useMemo(() => open.filter((t) => !t.estimated_minutes), [open]);
   const labeled = useMemo(() => open.filter((t) => t.estimated_minutes), [open]);
 
-  const visible = useMemo(() => {
-    const base = filter === 'unlabeled' ? unlabeled : open;
-    const q = search.trim().toLowerCase();
-    if (!q) return base;
-    return base.filter((t) => t.title.toLowerCase().includes(q));
-  }, [filter, unlabeled, open, search]);
+  const base = useMemo(() => filter === 'unlabeled' ? unlabeled : open, [filter, unlabeled, open]);
+  const visible = useFuzzyFilter(base, search, ['title', 'content']);
 
   async function setSize(t: Todo, size: SizeKey) {
     const meta = SIZES.find((s) => s.id === size)!;

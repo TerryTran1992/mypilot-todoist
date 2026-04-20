@@ -3,6 +3,7 @@ import { useTodos } from '../store/todos';
 import TodoRow from '../components/TodoRow';
 import Icon from '../components/Icon';
 import { byScore } from '../lib/sort';
+import { useFuzzyFilter } from '../lib/fuzzy';
 
 type Filter = 'all' | 'open' | 'done';
 
@@ -12,20 +13,22 @@ export default function Inbox() {
   const [search, setSearch] = useState('');
   const searchRef = useRef<HTMLInputElement>(null);
 
+  const statusFiltered = useMemo(() => {
+    return todos.filter((t) => {
+      if (filter === 'open' && t.is_completed) return false;
+      if (filter === 'done' && !t.is_completed) return false;
+      return true;
+    });
+  }, [todos, filter]);
+
+  const fuzzyFiltered = useFuzzyFilter(statusFiltered, search, ['title', 'content']);
+
   const visible = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return todos
-      .filter((t) => {
-        if (filter === 'open' && t.is_completed) return false;
-        if (filter === 'done' && !t.is_completed) return false;
-        if (q && !t.title.toLowerCase().includes(q)) return false;
-        return true;
-      })
-      .sort((a, b) => {
-        if (a.is_pinned !== b.is_pinned) return a.is_pinned ? -1 : 1;
-        return byScore(a, b);
-      });
-  }, [todos, filter, search]);
+    return [...fuzzyFiltered].sort((a, b) => {
+      if (a.is_pinned !== b.is_pinned) return a.is_pinned ? -1 : 1;
+      return byScore(a, b);
+    });
+  }, [fuzzyFiltered]);
 
   return (
     <div className="h-full flex flex-col">

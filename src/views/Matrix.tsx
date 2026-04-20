@@ -23,6 +23,7 @@ import { useLocalStore } from '../lib/useLocalStore';
 import Icon from '../components/Icon';
 import SubtaskProgress from '../components/SubtaskProgress';
 import { byScore } from '../lib/sort';
+import { useFuzzyFilter } from '../lib/fuzzy';
 
 type QuadrantDef = {
   id: Quadrant;
@@ -146,11 +147,7 @@ export default function Matrix() {
     clearMatrixFor(ids);
   }, [todos]);
 
-  const filteredOpen = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return openTodos;
-    return openTodos.filter((t) => t.title.toLowerCase().includes(q));
-  }, [openTodos, search]);
+  const filteredOpen = useFuzzyFilter(openTodos, search, ['title', 'content']);
 
   const grouped = useMemo(() => {
     const byQ: Record<Quadrant, Todo[]> = { do: [], schedule: [], delegate: [], eliminate: [] };

@@ -15,6 +15,7 @@ import { openTask } from '../store/selection';
 import { EnergyType, Todo } from '../types';
 import { DailyPlan, getPlan, setPlan, todayKey, tomorrowKey } from '../lib/local';
 import { byScore } from '../lib/sort';
+import { useFuzzyFilter } from '../lib/fuzzy';
 import Icon from '../components/Icon';
 import SubtaskProgress from '../components/SubtaskProgress';
 
@@ -293,14 +294,12 @@ export default function Planner() {
     [todos, assignedIds, otherDayAssigned],
   );
 
-  const pool = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return allLabeledPool.filter((t) => {
-      if (filterSlot && suggestedSlot(t.estimated_minutes) !== filterSlot) return false;
-      if (q && !t.title.toLowerCase().includes(q)) return false;
-      return true;
-    });
-  }, [allLabeledPool, filterSlot, search]);
+  const slotFiltered = useMemo(() => {
+    if (!filterSlot) return allLabeledPool;
+    return allLabeledPool.filter((t) => suggestedSlot(t.estimated_minutes) === filterSlot);
+  }, [allLabeledPool, filterSlot]);
+
+  const pool = useFuzzyFilter(slotFiltered, search, ['title', 'content']);
 
   const unlabeledCount = useMemo(
     () => todos.filter((t) => !t.is_completed && !t.estimated_minutes).length,
