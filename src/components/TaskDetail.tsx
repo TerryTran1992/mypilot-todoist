@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTodos, updateTodo, deleteTodo, toggleComplete } from '../store/todos';
 import { closeTask, openTask, useSelectedId } from '../store/selection';
 import {
@@ -46,14 +46,16 @@ export default function TaskDetail() {
   const { todos } = useTodos();
   useSubtaskProgressListener();
 
-  const resolved = useMemo(() => {
-    if (!id) return null;
+  let resolved: { todo: Todo; parentId: string | null } | null = null;
+  if (id) {
     const mainTodo = todos.find((t) => t.id === id);
-    if (mainTodo) return { todo: mainTodo, parentId: null as string | null };
-    const sub = findSubtaskById(id);
-    if (sub) return { todo: sub.subtask, parentId: sub.parentId };
-    return null;
-  }, [id, todos]);
+    if (mainTodo) {
+      resolved = { todo: mainTodo, parentId: null };
+    } else {
+      const sub = findSubtaskById(id);
+      if (sub) resolved = { todo: sub.subtask, parentId: sub.parentId };
+    }
+  }
 
   if (!id) return null;
 
