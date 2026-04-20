@@ -1,9 +1,9 @@
 import { useMemo, useRef, useState } from 'react';
-import Fuse from 'fuse.js';
 import { useTodos } from '../store/todos';
 import TodoRow from '../components/TodoRow';
 import Icon from '../components/Icon';
 import { byScore } from '../lib/sort';
+import { useFuzzyFilter } from '../lib/fuzzy';
 
 function dayKey(iso: string) {
   return iso.slice(0, 10);
@@ -33,18 +33,7 @@ export default function Completed() {
     [todos],
   );
 
-  const fuseRef = useRef<Fuse<(typeof done)[0]>>();
-  const fuseCountRef = useRef(0);
-  if (done.length !== fuseCountRef.current) {
-    fuseCountRef.current = done.length;
-    fuseRef.current = new Fuse(done, { keys: ['title', 'content'], threshold: 0.4, ignoreLocation: true });
-  }
-  const filtered = useMemo(() => {
-    const q = search.trim();
-    if (!q) return done;
-    if (!fuseRef.current) return done;
-    return fuseRef.current.search(q).map((r) => r.item);
-  }, [done, search]);
+  const filtered = useFuzzyFilter(done, search, ['title', 'content']);
 
   const grouped = useMemo(() => {
     const groups: Record<string, typeof filtered> = {};

@@ -4,6 +4,7 @@ import { openTask } from '../store/selection';
 import { Todo } from '../types';
 import Icon from '../components/Icon';
 import api from '../lib/api';
+import { useFuzzyFilter } from '../lib/fuzzy';
 
 type Phase = 'clear' | 'current' | 'creative';
 
@@ -456,25 +457,39 @@ function TaskList({ tasks, onSchedule, onDelete, showAge }: {
 function ClearPanel({ inbox, unplanned, onSchedule, onDelete }: {
   inbox: Todo[]; unplanned: Todo[]; onSchedule: (id: string) => void; onDelete: (id: string) => void;
 }) {
+  const [search, setSearch] = useState('');
+  const filteredInbox = useFuzzyFilter(inbox, search, ['title', 'content']);
+  const filteredUnplanned = useFuzzyFilter(unplanned, search, ['title', 'content']);
+
   return (
     <div className="space-y-6">
-      <Section title="Inbox Items" count={inbox.length} color="blue">
-        {inbox.length > 0 ? (
+      <div className="relative">
+        <Icon name="search" size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search tasks…"
+          className="w-full pl-8 pr-3 py-1.5 text-xs bg-surface-raised border border-zinc-800/60 rounded-full focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/20 transition-all duration-200"
+        />
+      </div>
+      <Section title="Inbox Items" count={filteredInbox.length} color="blue">
+        {filteredInbox.length > 0 ? (
           <div className="space-y-1 max-h-[300px] overflow-y-auto">
-            {inbox.map(t => (
+            {filteredInbox.map(t => (
               <TaskRow key={t.id} task={t} onSchedule={onSchedule} onDelete={onDelete} />
             ))}
           </div>
-        ) : <p className="text-xs text-zinc-600 italic">No inbox items</p>}
+        ) : <p className="text-xs text-zinc-600 italic">{search ? 'No matches' : 'No inbox items'}</p>}
       </Section>
-      <Section title="Unplanned Tasks" count={unplanned.length} color="blue">
-        {unplanned.length > 0 ? (
+      <Section title="Unplanned Tasks" count={filteredUnplanned.length} color="blue">
+        {filteredUnplanned.length > 0 ? (
           <div className="space-y-1 max-h-[300px] overflow-y-auto">
-            {unplanned.map(t => (
+            {filteredUnplanned.map(t => (
               <TaskRow key={t.id} task={t} onSchedule={onSchedule} onDelete={onDelete} />
             ))}
           </div>
-        ) : <p className="text-xs text-zinc-600 italic">No unplanned tasks — you're organized!</p>}
+        ) : <p className="text-xs text-zinc-600 italic">{search ? 'No matches' : 'No unplanned tasks — you\'re organized!'}</p>}
       </Section>
     </div>
   );

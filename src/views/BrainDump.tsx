@@ -3,6 +3,10 @@ import Fuse from 'fuse.js';
 import { createTodo, deleteTodo, useTodos } from '../store/todos';
 import Icon from '../components/Icon';
 
+function stripDiacritics(s: string): string {
+  return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D');
+}
+
 interface MatchItem { id: string; title: string; is_completed: boolean }
 type FuseResult = { item: MatchItem; score?: number };
 
@@ -12,16 +16,27 @@ function useDebouncedFuzzy(
   delay = 200,
 ) {
   const fuseRef = useRef<Fuse<MatchItem>>();
-  const todosLenRef = useRef(0);
+  const todosRef = useRef<MatchItem[]>([]);
   const [results, setResults] = useState<FuseResult[]>([]);
 
-  if (todos.length !== todosLenRef.current) {
-    todosLenRef.current = todos.length;
-    fuseRef.current = new Fuse(todos, { keys: ['title'], threshold: 0.4, includeScore: true });
+  if (todos !== todosRef.current) {
+    todosRef.current = todos;
+    fuseRef.current = new Fuse(todos, {
+      keys: ['title'],
+      threshold: 0.4,
+      includeScore: true,
+      ignoreLocation: true,
+      getFn: (obj: any, path: string | string[]) => {
+        const keys = Array.isArray(path) ? path : path.split('.');
+        let value: any = obj;
+        for (const k of keys) { if (value == null) return ''; value = value[k]; }
+        return typeof value === 'string' ? stripDiacritics(value) : (value ?? '');
+      },
+    });
   }
 
   useEffect(() => {
-    const q = query.trim();
+    const q = stripDiacritics(query.trim());
     if (q.length < 3) {
       setResults([]);
       return;
