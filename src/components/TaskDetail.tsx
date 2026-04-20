@@ -378,7 +378,7 @@ function Body({
 
         {savingErr && <p className="text-red-400 text-sm">{savingErr}</p>}
 
-        <SubtaskList todoId={todo.id} isParentTemp={isTempId(todo.id)} />
+        {!isSubtask && <SubtaskList todoId={todo.id} isParentTemp={isTempId(todo.id)} />}
 
         <div className="text-xs text-zinc-600 space-y-0.5 pt-2 border-t border-zinc-900">
           <p>Created · {fmtDateTime(todo.created_at)}</p>
