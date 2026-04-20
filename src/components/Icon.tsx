@@ -15,7 +15,13 @@ type IconProps = {
     | 'users'
     | 'arrow-left'
     | 'arrow-right'
-    | 'grip-vertical';
+    | 'grip-vertical'
+    | 'clipboard-check'
+    | 'star'
+    | 'star-filled'
+    | 'eye'
+    | 'sparkles'
+    | 'external-link';
   size?: number;
   className?: string;
 };
@@ -152,6 +158,48 @@ export default function Icon({ name, size = 18, className }: IconProps) {
           <circle cx="15" cy="12" r="1" fill="currentColor" stroke="none" />
           <circle cx="9" cy="18" r="1" fill="currentColor" stroke="none" />
           <circle cx="15" cy="18" r="1" fill="currentColor" stroke="none" />
+        </svg>
+      );
+    case 'clipboard-check':
+      return (
+        <svg {...common}>
+          <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+          <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+          <path d="M9 14l2 2 4-4" />
+        </svg>
+      );
+    case 'star':
+      return (
+        <svg {...common}>
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+        </svg>
+      );
+    case 'star-filled':
+      return (
+        <svg {...common} fill="currentColor">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+        </svg>
+      );
+    case 'eye':
+      return (
+        <svg {...common}>
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+          <circle cx="12" cy="12" r="3" />
+        </svg>
+      );
+    case 'sparkles':
+      return (
+        <svg {...common}>
+          <path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z" />
+          <path d="M18 14l1 3 3 1-3 1-1 3-1-3-3-1 3-1 1-3z" />
+        </svg>
+      );
+    case 'external-link':
+      return (
+        <svg {...common}>
+          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+          <polyline points="15 3 21 3 21 9" />
+          <line x1="10" y1="14" x2="21" y2="3" />
         </svg>
       );
   }

@@ -5,6 +5,7 @@ import QuickCapture from '../components/QuickCapture';
 import BrainDump from '../views/BrainDump';
 import Today from '../views/Today';
 import Weekly from '../views/Weekly';
+import WeeklyReview from '../views/WeeklyReview';
 import Matrix from '../views/Matrix';
 import Delegation from '../views/Delegation';
 import Inbox from '../views/Inbox';
@@ -21,7 +22,7 @@ export default function Home({ onLogout }: { onLogout: () => void }) {
   const user = getUser();
   const [view, setView] = useState<View>(() => {
     const stored = localStorage.getItem(LAST_VIEW_KEY) as string | null;
-    const valid: View[] = ['brain', 'today', 'weekly', 'matrix', 'delegation', 'inbox', 'completed'];
+    const valid: View[] = ['brain', 'today', 'weekly', 'review', 'matrix', 'delegation', 'inbox', 'completed'];
     return (valid.includes(stored as View) ? (stored as View) : 'today') as View;
   });
   const [collapsed, setCollapsed] = useState<boolean>(() => localStorage.getItem(SIDEBAR_KEY) === '1');
@@ -58,17 +59,21 @@ export default function Home({ onLogout }: { onLogout: () => void }) {
           break;
         case '4':
           e.preventDefault();
-          setView('matrix');
+          setView('review');
           break;
         case '5':
           e.preventDefault();
-          setView('delegation');
+          setView('matrix');
           break;
         case '6':
           e.preventDefault();
-          setView('inbox');
+          setView('delegation');
           break;
         case '7':
+          e.preventDefault();
+          setView('inbox');
+          break;
+        case '8':
           e.preventDefault();
           setView('completed');
           break;
@@ -137,6 +142,7 @@ export default function Home({ onLogout }: { onLogout: () => void }) {
           {view === 'brain' && <BrainDump onStartPlanning={() => setView('weekly')} />}
           {view === 'today' && <Today />}
           {view === 'weekly' && <Weekly />}
+          {view === 'review' && <WeeklyReview />}
           {view === 'matrix' && <Matrix />}
           {view === 'delegation' && <Delegation />}
           {view === 'inbox' && <Inbox />}
