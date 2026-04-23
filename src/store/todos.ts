@@ -59,6 +59,8 @@ function optimisticTodo(input: { title: string; priority?: Todo['priority'] }): 
   };
 }
 
+let mutationCooldownUntil = 0;
+
 export function useTodos() {
   const [todos, setTodos] = useState<Todo[]>(cache);
   const [loading, setLoading] = useState(cache.length === 0);
@@ -76,7 +78,10 @@ export function useTodos() {
     setError(null);
     try {
       const fresh = await api.get<Todo[]>('/todos?limit=200');
-      // Preserve any optimistic-only temp entries that haven't been flushed yet
+      if (Date.now() < mutationCooldownUntil) {
+        void drainQueue();
+        return;
+      }
       const temps = cache.filter((t) => isTempId(t.id));
       setCache([...temps, ...fresh]);
       void drainQueue();
@@ -84,7 +89,6 @@ export function useTodos() {
       if (!(err instanceof NetworkError)) {
         setError(err instanceof Error ? err.message : 'Failed to load');
       }
-      // On network error: keep the persisted cache; no user-facing error.
     } finally {
       setLoading(false);
     }
@@ -100,6 +104,7 @@ export function useTodos() {
 export async function createTodo(input: { title: string; priority?: Todo['priority'] }) {
   const optimistic = optimisticTodo(input);
   setCache([optimistic, ...cache]);
+  mutationCooldownUntil = Date.now() + 3000;
 
   try {
     const created = await api.post<Todo>('/todos', input);
@@ -118,9 +123,9 @@ export async function createTodo(input: { title: string; priority?: Todo['priori
 export async function updateTodo(id: string, patch: Partial<Todo>) {
   const prev = cache;
   setCache(cache.map((t) => (t.id === id ? { ...t, ...patch } : t)));
+  mutationCooldownUntil = Date.now() + 3000;
 
   if (isTempId(id)) {
-    // Parent create hasn't flushed yet — queue the update so it runs after the create resolves.
     enqueue({ kind: 'update', id, patch });
     return cache.find((t) => t.id === id)!;
   }
@@ -142,6 +147,7 @@ export async function updateTodo(id: string, patch: Partial<Todo>) {
 export async function deleteTodo(id: string) {
   const prev = cache;
   setCache(cache.filter((t) => t.id !== id));
+  mutationCooldownUntil = Date.now() + 3000;
   clearSubtasksForTodo(id);
 
   if (isTempId(id)) {
@@ -167,10 +173,18 @@ export async function deleteTodo(id: string) {
 export async function toggleComplete(t: Todo) {
   const nextCompleted = !t.is_completed;
   if (nextCompleted) completeAllSubtasks(t.id);
-  return updateTodo(t.id, {
+  const patch: Partial<Todo> = {
     is_completed: nextCompleted,
     completed_at: nextCompleted ? new Date().toISOString() : null,
-  });
+  };
+  if (t.delegated_to && t.delegation_status) {
+    if (nextCompleted) {
+      patch.delegation_status = 'done';
+    } else {
+      patch.delegation_status = 'in_progress';
+    }
+  }
+  return updateTodo(t.id, patch);
 }
 
 // ---- Queue drain ----
@@ -236,6 +250,7 @@ export async function refreshFromServer() {
   refreshInFlight = true;
   try {
     const fresh = await api.get<Todo[]>('/todos?limit=200');
+    if (Date.now() < mutationCooldownUntil) return;
     const temps = cache.filter((t) => isTempId(t.id));
     setCache([...temps, ...fresh]);
   } catch {
