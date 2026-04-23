@@ -10,7 +10,7 @@ import {
 } from '../store/subtasks';
 import api, { ApiError, NetworkError } from '../lib/api';
 import { isTempId } from '../lib/sync';
-import { Category, DelegationStatus, EnergyType, Priority, Todo, TodoComment } from '../types';
+import { Category, DelegationStatus, EnergyType, Priority, RecurrenceFrequency, Todo, TodoComment } from '../types';
 import Icon from './Icon';
 import SubtaskList from './SubtaskList';
 
@@ -25,6 +25,15 @@ const ENERGIES: { id: EnergyType; label: string }[] = [
   { id: 'quick_win', label: 'Quick Win' },
 ];
 const CATEGORIES: Category[] = ['work', 'personal', 'family', 'health', 'learning'];
+const RECURRENCES: { id: RecurrenceFrequency; label: string }[] = [
+  { id: 'daily', label: 'Daily' },
+  { id: 'weekdays', label: 'Weekdays' },
+  { id: 'weekly', label: 'Weekly' },
+  { id: 'biweekly', label: 'Biweekly' },
+  { id: 'monthly', label: 'Monthly' },
+  { id: 'quarterly', label: 'Quarterly' },
+  { id: 'yearly', label: 'Yearly' },
+];
 
 function fmtDateTime(iso?: string | null) {
   if (!iso) return '';
@@ -376,6 +385,37 @@ function Body({
           </Field>
         </div>
 
+        <Field label="Repeat">
+          <div className="flex flex-wrap gap-1">
+            {RECURRENCES.map((r) => (
+              <button
+                key={r.id}
+                onClick={() =>
+                  patch({ recurrence_frequency: todo.recurrence_frequency === r.id ? null : r.id })
+                }
+                className={`px-2 py-0.5 text-[11px] rounded-full cursor-pointer transition capitalize ${
+                  todo.recurrence_frequency === r.id
+                    ? 'bg-accent text-black'
+                    : 'bg-zinc-900 text-zinc-400 hover:text-white'
+                }`}
+              >
+                {r.label}
+              </button>
+            ))}
+          </div>
+          {todo.recurrence_frequency && (
+            <div className="mt-2">
+              <p className="text-[10px] text-zinc-500 mb-1">Ends on (optional)</p>
+              <input
+                type="date"
+                value={isoToDateInput(todo.recurrence_end_date)}
+                onChange={(e) => patch({ recurrence_end_date: e.target.value || null })}
+                className="w-full bg-surface-raised border border-zinc-800/60 rounded-lg px-2 py-1.5 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/20 [color-scheme:dark] transition-all duration-200"
+              />
+            </div>
+          )}
+        </Field>
+
         {savingErr && <p className="text-red-400 text-sm">{savingErr}</p>}
 
         {!isSubtask && <SubtaskList todoId={todo.id} isParentTemp={isTempId(todo.id)} />}
@@ -383,6 +423,13 @@ function Body({
         <div className="text-xs text-zinc-600 space-y-0.5 pt-2 border-t border-zinc-800/60">
           <p>Created · {fmtDateTime(todo.created_at)}</p>
           {todo.completed_at && <p>Completed · {fmtDateTime(todo.completed_at)}</p>}
+          {todo.recurrence_frequency && (
+            <p className="text-accent/70">
+              <Icon name="repeat" size={11} className="inline mr-1" />
+              Repeats {todo.recurrence_frequency}
+              {todo.recurrence_end_date && ` until ${new Date(todo.recurrence_end_date).toLocaleDateString(undefined, { dateStyle: 'medium' })}`}
+            </p>
+          )}
           {typeof todo.priority_score === 'number' && (
             <p title="Server-calculated ranking score (0–1000, higher = more important)">
               Priority score ·{' '}

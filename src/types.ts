@@ -39,6 +39,9 @@ export type Todo = {
   parent_id?: string | null;
   subtask_count?: number;
   subtask_completed_count?: number;
+  recurrence_frequency?: RecurrenceFrequency | null;
+  recurrence_end_date?: string | null;
 };
 
 export type DelegationStatus = 'delegated' | 'in_progress' | 'done';
+export type RecurrenceFrequency = 'daily' | 'weekdays' | 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'yearly';

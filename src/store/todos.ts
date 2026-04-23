@@ -184,7 +184,11 @@ export async function toggleComplete(t: Todo) {
       patch.delegation_status = 'in_progress';
     }
   }
-  return updateTodo(t.id, patch);
+  const result = await updateTodo(t.id, patch);
+  if (nextCompleted && t.recurrence_frequency) {
+    setTimeout(() => void refreshFromServer(), 500);
+  }
+  return result;
 }
 
 // ---- Queue drain ----

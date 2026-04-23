@@ -46,6 +46,12 @@ export default function TodoRow({ t, onError }: { t: Todo; onError: (msg: string
 
       <SubtaskProgress todoId={t.id} todo={t} />
 
+      {t.recurrence_frequency && (
+        <span className="text-accent/60" title={`Repeats ${t.recurrence_frequency}`}>
+          <Icon name="repeat" size={13} />
+        </span>
+      )}
+
       {t.priority !== 'medium' && (
         <span
           className={`text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full tracking-wide ${
