@@ -4,6 +4,7 @@ import { openTask } from '../store/selection';
 import { Todo } from '../types';
 import Icon from '../components/Icon';
 import SubtaskProgress from '../components/SubtaskProgress';
+import { useFuzzyFilter } from '../lib/fuzzy';
 
 function startOfWeek(date: Date): Date {
   const d = new Date(date);
@@ -50,6 +51,7 @@ export default function Upcoming() {
   const [overdueOpen, setOverdueOpen] = useState(true);
   const [addingForDate, setAddingForDate] = useState<string | null>(null);
   const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [search, setSearch] = useState('');
 
   const weekDays = useMemo(
     () => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)),
@@ -60,9 +62,18 @@ export default function Upcoming() {
   const nextWeek = () => setWeekStart(addDays(weekStart, 7));
   const goToday = () => setWeekStart(startOfWeek(today));
 
+  const visibleTodos = useMemo(
+    () => todos.filter((t) => {
+      if (t.is_completed) return false;
+      return t.deadline || t.time_block_date || t.recurrence_frequency;
+    }),
+    [todos],
+  );
+  const filtered = useFuzzyFilter(visibleTodos, search, ['title', 'content']);
+
   const tasksByDate = useMemo(() => {
     const map = new Map<string, Todo[]>();
-    for (const t of todos) {
+    for (const t of filtered) {
       if (t.is_completed) continue;
       let ds = t.deadline?.slice(0, 10) || t.time_block_date?.slice(0, 10);
       if (!ds && t.recurrence_frequency) {
@@ -74,18 +85,18 @@ export default function Upcoming() {
       map.set(ds, arr);
     }
     return map;
-  }, [todos, todayStr]);
+  }, [filtered, todayStr]);
 
   const overdueTasks = useMemo(
     () =>
-      todos
+      filtered
         .filter((t) => {
           if (t.is_completed) return false;
           const ds = t.deadline?.slice(0, 10);
           return ds ? ds < todayStr : false;
         })
         .sort((a, b) => (a.deadline || '').localeCompare(b.deadline || '')),
-    [todos, todayStr],
+    [filtered, todayStr],
   );
 
   const dateSections = useMemo(() => {
@@ -206,6 +217,41 @@ export default function Upcoming() {
             );
           })}
         </div>
+
+        <div className="flex items-center gap-2 mt-3">
+          <div className="relative flex-1">
+            <Icon
+              name="search"
+              size={12}
+              className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-500"
+            />
+            <input
+              data-search-input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search tasks…"
+              className="w-full pl-7 pr-7 py-1 text-xs bg-zinc-900 border border-zinc-800 rounded focus:border-accent focus:outline-none"
+            />
+            {search && (
+              <button
+                onClick={() => setSearch('')}
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white cursor-pointer p-0.5"
+                aria-label="Clear search"
+              >
+                <Icon name="x" size={11} />
+              </button>
+            )}
+          </div>
+          {search && (
+            <span className="text-xs text-zinc-500 shrink-0">
+              {filtered.length}
+              {filtered.length !== visibleTodos.length && (
+                <span className="text-zinc-600"> / {visibleTodos.length}</span>
+              )}
+            </span>
+          )}
+        </div>
       </header>
 
       {error && (
@@ -221,6 +267,9 @@ export default function Upcoming() {
         <p className="p-6 text-zinc-500 text-sm">Loading…</p>
       ) : (
         <main className="flex-1 overflow-y-auto">
+          {search && filtered.length === 0 && (
+            <p className="px-6 py-8 text-sm text-zinc-600 italic text-center">No matches.</p>
+          )}
           {overdueTasks.length > 0 && (
             <div className="border-b border-zinc-800/60">
               <div
