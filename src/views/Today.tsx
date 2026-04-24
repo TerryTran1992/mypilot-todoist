@@ -23,8 +23,8 @@ import SubtaskProgress from '../components/SubtaskProgress';
 type Slot = 'big' | 'medium' | 'small';
 const POOL_ID = 'planner-pool';
 const TIMELINE_ID = 'timeline-drop';
-const START_HOUR = 7;
-const END_HOUR = 22;
+const START_HOUR = 5;
+const END_HOUR = 23;
 const HOUR_HEIGHT = 72;
 const SNAP_MINUTES = 15;
 const DEFAULT_DURATION = 60;
@@ -49,8 +49,8 @@ const SLOT_META: Record<Slot, SlotMeta> = {
     chip: 'Big',
     defaultMinutes: 180,
     energy: 'deep_focus',
-    start: '08:00',
-    end: '10:00',
+    start: '05:00',
+    end: '08:00',
     dot: 'bg-purple-500',
   },
   medium: {
@@ -59,8 +59,8 @@ const SLOT_META: Record<Slot, SlotMeta> = {
     chip: 'Med',
     defaultMinutes: 45,
     energy: 'deep_focus',
-    start: '10:00',
-    end: '12:00',
+    start: '08:00',
+    end: '11:00',
     dot: 'bg-blue-500',
   },
   small: {
@@ -832,8 +832,8 @@ export default function Planner() {
                   <div
                     className="absolute left-0 right-0 bg-purple-950/10 border-l-2 border-purple-500/25 rounded-r"
                     style={{
-                      top: timeToY('08:00'),
-                      height: durationToHeight('08:00', '12:00'),
+                      top: timeToY('05:00'),
+                      height: durationToHeight('05:00', '11:00'),
                     }}
                   >
                     <div className="px-2 py-1">
