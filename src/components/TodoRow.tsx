@@ -46,8 +46,15 @@ export default function TodoRow({ t, onError }: { t: Todo; onError: (msg: string
 
       <SubtaskProgress todoId={t.id} todo={t} />
 
+      {t.time_block_start && (
+        <span className="text-zinc-500 text-[11px] tabular-nums">{t.time_block_start}</span>
+      )}
       {t.recurrence_frequency && (
-        <span className="text-accent/60" title={`Repeats ${t.recurrence_frequency}`}>
+        <span className="text-accent/60" title={
+          t.recurrence_frequency === 'custom'
+            ? `Repeats every ${t.recurrence_interval ?? 1} ${t.recurrence_unit ?? 'day'}${(t.recurrence_interval ?? 1) > 1 ? 's' : ''}`
+            : `Repeats ${t.recurrence_frequency}`
+        }>
           <Icon name="repeat" size={13} />
         </span>
       )}

@@ -64,14 +64,17 @@ export default function Upcoming() {
     const map = new Map<string, Todo[]>();
     for (const t of todos) {
       if (t.is_completed) continue;
-      const ds = t.deadline?.slice(0, 10) || t.time_block_date?.slice(0, 10);
+      let ds = t.deadline?.slice(0, 10) || t.time_block_date?.slice(0, 10);
+      if (!ds && t.recurrence_frequency) {
+        ds = todayStr;
+      }
       if (!ds) continue;
       const arr = map.get(ds) || [];
       arr.push(t);
       map.set(ds, arr);
     }
     return map;
-  }, [todos]);
+  }, [todos, todayStr]);
 
   const overdueTasks = useMemo(
     () =>

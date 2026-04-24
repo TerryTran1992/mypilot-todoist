@@ -41,7 +41,11 @@ export type Todo = {
   subtask_completed_count?: number;
   recurrence_frequency?: RecurrenceFrequency | null;
   recurrence_end_date?: string | null;
+  recurrence_interval?: number | null;
+  recurrence_unit?: RecurrenceUnit | null;
+  recurrence_count?: number | null;
 };
 
 export type DelegationStatus = 'delegated' | 'in_progress' | 'done';
-export type RecurrenceFrequency = 'daily' | 'weekdays' | 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'yearly';
+export type RecurrenceFrequency = 'daily' | 'weekdays' | 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'yearly' | 'custom';
+export type RecurrenceUnit = 'day' | 'week' | 'month' | 'year';

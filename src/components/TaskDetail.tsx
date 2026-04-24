@@ -10,7 +10,7 @@ import {
 } from '../store/subtasks';
 import api, { ApiError, NetworkError } from '../lib/api';
 import { isTempId } from '../lib/sync';
-import { Category, DelegationStatus, EnergyType, Priority, RecurrenceFrequency, Todo, TodoComment } from '../types';
+import { Category, DelegationStatus, EnergyType, Priority, RecurrenceFrequency, RecurrenceUnit, Todo, TodoComment } from '../types';
 import Icon from './Icon';
 import SubtaskList from './SubtaskList';
 
@@ -33,7 +33,33 @@ const RECURRENCES: { id: RecurrenceFrequency; label: string }[] = [
   { id: 'monthly', label: 'Monthly' },
   { id: 'quarterly', label: 'Quarterly' },
   { id: 'yearly', label: 'Yearly' },
+  { id: 'custom', label: 'Custom…' },
 ];
+const RECURRENCE_UNITS: { id: RecurrenceUnit; label: string; plural: string }[] = [
+  { id: 'day', label: 'day', plural: 'days' },
+  { id: 'week', label: 'week', plural: 'weeks' },
+  { id: 'month', label: 'month', plural: 'months' },
+  { id: 'year', label: 'year', plural: 'years' },
+];
+
+function addMinutesToTime(start: string, minutes: number): string {
+  const [h, m] = start.split(':').map(Number);
+  const total = h * 60 + m + minutes;
+  const eh = Math.min(23, Math.floor(total / 60));
+  const em = total % 60;
+  return `${String(eh).padStart(2, '0')}:${String(em).padStart(2, '0')}`;
+}
+
+function describeRecurrence(todo: Todo): string {
+  if (!todo.recurrence_frequency) return '';
+  if (todo.recurrence_frequency === 'custom') {
+    const n = todo.recurrence_interval || 1;
+    const u = RECURRENCE_UNITS.find((u) => u.id === todo.recurrence_unit);
+    const unitLabel = u ? (n === 1 ? u.label : u.plural) : 'day';
+    return n === 1 ? `every ${unitLabel}` : `every ${n} ${unitLabel}`;
+  }
+  return todo.recurrence_frequency;
+}
 
 function fmtDateTime(iso?: string | null) {
   if (!iso) return '';
@@ -378,9 +404,54 @@ function Body({
               value={todo.estimated_minutes ?? ''}
               onChange={(e) => {
                 const v = e.target.value === '' ? null : Math.max(0, Number(e.target.value));
-                patch({ estimated_minutes: v });
+                const updates: Partial<Todo> = { estimated_minutes: v };
+                if (v && todo.time_block_start) {
+                  (updates as any).time_block_end = addMinutesToTime(todo.time_block_start, v);
+                }
+                patch(updates);
               }}
               className="w-full bg-surface-raised border border-zinc-800/60 rounded-lg px-2 py-1.5 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/20 transition-all duration-200"
+            />
+          </Field>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Start time">
+            <input
+              type="time"
+              value={todo.time_block_start ?? ''}
+              onChange={(e) => {
+                const v = e.target.value || null;
+                const updates: Partial<Todo> = { time_block_start: v } as Partial<Todo>;
+                if (v) {
+                  if (!todo.time_block_date) {
+                    (updates as any).time_block_date = new Date().toISOString().slice(0, 10);
+                  }
+                  if (todo.estimated_minutes) {
+                    (updates as any).time_block_end = addMinutesToTime(v, todo.estimated_minutes);
+                  }
+                } else {
+                  (updates as any).time_block_date = null;
+                  (updates as any).time_block_end = null;
+                }
+                patch(updates);
+              }}
+              className="w-full bg-surface-raised border border-zinc-800/60 rounded-lg px-2 py-1.5 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/20 [color-scheme:dark] transition-all duration-200"
+            />
+          </Field>
+          <Field label="End time">
+            <input
+              type="time"
+              value={
+                todo.time_block_end
+                  ? todo.time_block_end
+                  : todo.time_block_start && todo.estimated_minutes
+                  ? addMinutesToTime(todo.time_block_start, todo.estimated_minutes)
+                  : ''
+              }
+              readOnly
+              tabIndex={-1}
+              className="w-full bg-zinc-900/50 border border-zinc-800/40 rounded-lg px-2 py-1.5 text-sm text-zinc-400 [color-scheme:dark] cursor-default"
             />
           </Field>
         </div>
@@ -390,9 +461,30 @@ function Body({
             {RECURRENCES.map((r) => (
               <button
                 key={r.id}
-                onClick={() =>
-                  patch({ recurrence_frequency: todo.recurrence_frequency === r.id ? null : r.id })
-                }
+                onClick={() => {
+                  if (todo.recurrence_frequency === r.id) {
+                    patch({
+                      recurrence_frequency: null,
+                      recurrence_interval: null,
+                      recurrence_unit: null,
+                      recurrence_count: null,
+                      recurrence_end_date: null,
+                    });
+                  } else {
+                    const updates: Partial<Todo> = { recurrence_frequency: r.id };
+                    if (r.id === 'custom') {
+                      updates.recurrence_interval = todo.recurrence_interval || 1;
+                      updates.recurrence_unit = todo.recurrence_unit || 'day';
+                    } else {
+                      updates.recurrence_interval = null;
+                      updates.recurrence_unit = null;
+                    }
+                    if (!todo.deadline) {
+                      updates.deadline = new Date().toISOString();
+                    }
+                    patch(updates);
+                  }
+                }}
                 className={`px-2 py-0.5 text-[11px] rounded-full cursor-pointer transition capitalize ${
                   todo.recurrence_frequency === r.id
                     ? 'bg-accent text-black'
@@ -403,15 +495,92 @@ function Body({
               </button>
             ))}
           </div>
-          {todo.recurrence_frequency && (
-            <div className="mt-2">
-              <p className="text-[10px] text-zinc-500 mb-1">Ends on (optional)</p>
+
+          {todo.recurrence_frequency === 'custom' && (
+            <div className="mt-2 flex items-center gap-2">
+              <span className="text-[11px] text-zinc-400">Every</span>
               <input
-                type="date"
-                value={isoToDateInput(todo.recurrence_end_date)}
-                onChange={(e) => patch({ recurrence_end_date: e.target.value || null })}
-                className="w-full bg-surface-raised border border-zinc-800/60 rounded-lg px-2 py-1.5 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/20 [color-scheme:dark] transition-all duration-200"
+                type="number"
+                min={1}
+                max={365}
+                value={todo.recurrence_interval ?? 1}
+                onChange={(e) => {
+                  const v = Math.max(1, Number(e.target.value) || 1);
+                  patch({ recurrence_interval: v });
+                }}
+                className="w-16 bg-surface-raised border border-zinc-800/60 rounded-lg px-2 py-1 text-sm text-center focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/20 transition-all duration-200"
               />
+              <select
+                value={todo.recurrence_unit ?? 'day'}
+                onChange={(e) => patch({ recurrence_unit: e.target.value as RecurrenceUnit })}
+                className="bg-surface-raised border border-zinc-800/60 rounded-lg px-2 py-1 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/20 [color-scheme:dark] cursor-pointer transition-all duration-200"
+              >
+                {RECURRENCE_UNITS.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {(todo.recurrence_interval ?? 1) === 1 ? u.label : u.plural}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {todo.recurrence_frequency && (
+            <div className="mt-3 space-y-1.5">
+              <p className="text-[10px] text-zinc-500 uppercase tracking-wide">Ends</p>
+              <label className="flex items-center gap-2 text-sm text-zinc-300 cursor-pointer">
+                <input
+                  type="radio"
+                  name={`ends-${todo.id}`}
+                  checked={!todo.recurrence_end_date && !todo.recurrence_count}
+                  onChange={() => patch({ recurrence_end_date: null, recurrence_count: null })}
+                  className="accent-accent cursor-pointer"
+                />
+                Never
+              </label>
+              <label className="flex items-center gap-2 text-sm text-zinc-300 cursor-pointer">
+                <input
+                  type="radio"
+                  name={`ends-${todo.id}`}
+                  checked={!!todo.recurrence_end_date}
+                  onChange={() => {
+                    const d = new Date();
+                    d.setMonth(d.getMonth() + 1);
+                    patch({ recurrence_end_date: d.toISOString().slice(0, 10), recurrence_count: null });
+                  }}
+                  className="accent-accent cursor-pointer"
+                />
+                On
+                <input
+                  type="date"
+                  value={isoToDateInput(todo.recurrence_end_date)}
+                  onChange={(e) => patch({ recurrence_end_date: e.target.value || null, recurrence_count: null })}
+                  disabled={!todo.recurrence_end_date}
+                  className="bg-surface-raised border border-zinc-800/60 rounded-lg px-2 py-0.5 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/20 [color-scheme:dark] disabled:opacity-40 transition-all duration-200"
+                />
+              </label>
+              <label className="flex items-center gap-2 text-sm text-zinc-300 cursor-pointer">
+                <input
+                  type="radio"
+                  name={`ends-${todo.id}`}
+                  checked={!!todo.recurrence_count}
+                  onChange={() => patch({ recurrence_count: 10, recurrence_end_date: null })}
+                  className="accent-accent cursor-pointer"
+                />
+                After
+                <input
+                  type="number"
+                  min={1}
+                  max={999}
+                  value={todo.recurrence_count ?? 10}
+                  onChange={(e) => {
+                    const v = Math.max(1, Number(e.target.value) || 1);
+                    patch({ recurrence_count: v, recurrence_end_date: null });
+                  }}
+                  disabled={!todo.recurrence_count}
+                  className="w-16 bg-surface-raised border border-zinc-800/60 rounded-lg px-2 py-0.5 text-sm text-center focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/20 disabled:opacity-40 transition-all duration-200"
+                />
+                <span className="text-zinc-500 text-xs">occurrences</span>
+              </label>
             </div>
           )}
         </Field>
@@ -426,8 +595,17 @@ function Body({
           {todo.recurrence_frequency && (
             <p className="text-accent/70">
               <Icon name="repeat" size={11} className="inline mr-1" />
-              Repeats {todo.recurrence_frequency}
+              Repeats {describeRecurrence(todo)}
               {todo.recurrence_end_date && ` until ${new Date(todo.recurrence_end_date).toLocaleDateString(undefined, { dateStyle: 'medium' })}`}
+              {todo.recurrence_count && ` (${todo.recurrence_count} left)`}
+            </p>
+          )}
+          {todo.time_block_start && (
+            <p>
+              <Icon name="calendar" size={11} className="inline mr-1" />
+              {todo.time_block_start}
+              {(todo.time_block_end || (todo.estimated_minutes ? addMinutesToTime(todo.time_block_start, todo.estimated_minutes) : null)) &&
+                ` – ${todo.time_block_end || addMinutesToTime(todo.time_block_start, todo.estimated_minutes!)}`}
             </p>
           )}
           {typeof todo.priority_score === 'number' && (

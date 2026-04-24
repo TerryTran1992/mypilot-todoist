@@ -506,18 +506,24 @@ export default function Planner() {
     return s;
   }, [day, plan]);
 
-  const scheduled = useMemo(
-    () =>
-      todos.filter(
-        (t) =>
-          normalizeDate(t.time_block_date) === date &&
-          t.time_block_start &&
-          t.time_block_end,
-      ),
-    [todos, date],
-  );
+  const scheduled = useMemo(() => {
+    const result: Todo[] = [];
+    for (const t of todos) {
+      if (!t.time_block_start || t.is_completed) continue;
+      const end = t.time_block_end || (t.estimated_minutes ? minutesToTime(timeToMinutes(t.time_block_start) + t.estimated_minutes) : null);
+      if (!end) continue;
+      const onDate = normalizeDate(t.time_block_date) === date;
+      const recurringNoDate = !t.time_block_date && !!t.recurrence_frequency;
+      if (onDate || recurringNoDate) {
+        result.push(t.time_block_end ? t : { ...t, time_block_end: end, time_block_date: date });
+      }
+    }
+    return result;
+  }, [todos, date]);
 
   const layout = useMemo(() => layoutEvents(scheduled), [scheduled]);
+
+  const scheduledIds = useMemo(() => new Set(scheduled.map((t) => t.id)), [scheduled]);
 
   const allLabeledPool = useMemo(
     () =>
@@ -527,11 +533,13 @@ export default function Planner() {
             !t.is_completed &&
             !assignedIds.has(t.id) &&
             !otherDayAssigned.has(t.id) &&
+            !scheduledIds.has(t.id) &&
             !!t.estimated_minutes &&
-            !t.time_block_date,
+            !t.time_block_date &&
+            !t.time_block_start,
         )
         .sort(byScore),
-    [todos, assignedIds, otherDayAssigned],
+    [todos, assignedIds, otherDayAssigned, scheduledIds],
   );
 
   const slotFiltered = useMemo(() => {
