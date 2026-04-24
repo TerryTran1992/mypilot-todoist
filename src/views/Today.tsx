@@ -131,6 +131,12 @@ function snapMinutes(raw: number): number {
   return Math.max(START_HOUR * 60, Math.min((END_HOUR - 1) * 60, snapped));
 }
 
+function taskDuration(t: Todo | undefined): number {
+  if (t?.time_block_start && t?.time_block_end)
+    return timeToMinutes(t.time_block_end) - timeToMinutes(t.time_block_start);
+  return t?.estimated_minutes || DEFAULT_DURATION;
+}
+
 type LayoutItem = {
   todo: Todo;
   start: number;
@@ -202,16 +208,22 @@ function TimelineEvent({
   item,
   onToggle,
   onUnschedule,
+  contentRef,
 }: {
   item: LayoutItem;
   onToggle: (t: Todo) => void;
   onUnschedule: (id: string) => void;
+  contentRef: React.MutableRefObject<HTMLDivElement | null>;
 }) {
   const t = item.todo;
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: t.id });
   const isMeeting = (t.category as string) === 'meeting';
+  const [resizeEnd, setResizeEnd] = useState<string | null>(null);
+  const resizeEndRef = useRef<string | null>(null);
+
+  const effectiveEnd = resizeEnd || t.time_block_end!;
   const top = timeToY(t.time_block_start!);
-  const height = durationToHeight(t.time_block_start!, t.time_block_end!);
+  const height = durationToHeight(t.time_block_start!, effectiveEnd);
   const gap = 2;
   const colWidth =
     item.totalColumns > 1
@@ -219,6 +231,40 @@ function TimelineEvent({
       : 100;
   const left = item.column * (colWidth + gap);
   const organizer = isMeeting ? getOrganizer(t.content) : null;
+
+  const handleResizeStart = useCallback(
+    (e: React.PointerEvent) => {
+      e.stopPropagation();
+      e.preventDefault();
+      const startMins = timeToMinutes(t.time_block_start!);
+      const onMove = (ev: PointerEvent) => {
+        const el = contentRef.current;
+        if (!el) return;
+        const rect = el.getBoundingClientRect();
+        const y = ev.clientY - rect.top;
+        const rawMinutes = (y / HOUR_HEIGHT) * 60 + START_HOUR * 60;
+        const endMins = Math.max(
+          snapMinutes(rawMinutes),
+          startMins + SNAP_MINUTES,
+        );
+        const newEnd = minutesToTime(endMins);
+        resizeEndRef.current = newEnd;
+        setResizeEnd(newEnd);
+      };
+      const onUp = () => {
+        window.removeEventListener('pointermove', onMove);
+        window.removeEventListener('pointerup', onUp);
+        if (resizeEndRef.current) {
+          void updateTodo(t.id, { time_block_end: resizeEndRef.current });
+        }
+        resizeEndRef.current = null;
+        setResizeEnd(null);
+      };
+      window.addEventListener('pointermove', onMove);
+      window.addEventListener('pointerup', onUp);
+    },
+    [t.id, t.time_block_start, contentRef],
+  );
 
   return (
     <div
@@ -239,7 +285,7 @@ function TimelineEvent({
         height: Math.max(height, 28),
         left: `${left}%`,
         width: `${colWidth}%`,
-        zIndex: 10,
+        zIndex: resizeEnd ? 30 : 10,
       }}
     >
       <div className="flex flex-col h-full px-2.5 py-1.5 min-w-0">
@@ -285,12 +331,20 @@ function TimelineEvent({
             <span
               className={`text-[10px] ${isMeeting ? 'text-teal-400/60' : 'text-zinc-500'}`}
             >
-              {fmtTime12(t.time_block_start!)} – {fmtTime12(t.time_block_end!)}
+              {fmtTime12(t.time_block_start!)} – {fmtTime12(effectiveEnd)}
             </span>
             <SubtaskProgress todoId={t.id} />
           </div>
         )}
       </div>
+      {!isMeeting && (
+        <div
+          onPointerDown={handleResizeStart}
+          className="absolute bottom-0 left-0 right-0 h-2 cursor-s-resize group/resize"
+        >
+          <div className="absolute bottom-0.5 left-1/3 right-1/3 h-0.5 rounded-full bg-zinc-500/0 group-hover:bg-zinc-400/60 group-hover/resize:bg-accent/80 transition-colors" />
+        </div>
+      )}
     </div>
   );
 }
@@ -670,7 +724,7 @@ export default function Planner() {
           const computedTime = minutesToTime(snapMinutes(rawMinutes));
           const todoId = String(e.active.id);
           const todo = byId.get(todoId);
-          const duration = todo?.estimated_minutes || DEFAULT_DURATION;
+          const duration = taskDuration(todo);
           const startMins = timeToMinutes(computedTime);
           const endMins = Math.min(startMins + duration, END_HOUR * 60);
 
@@ -701,7 +755,7 @@ export default function Planner() {
 
     if (target === TIMELINE_ID) {
       const todo = byId.get(todoId);
-      const duration = todo?.estimated_minutes || DEFAULT_DURATION;
+      const duration = taskDuration(todo);
 
       // Use dropTime if available, otherwise compute from pointer position
       let finalTime = currentDropTime;
@@ -761,10 +815,7 @@ export default function Planner() {
 
   // Ghost block height for drop indicator
   const ghostHeight = dragging
-    ? Math.max(
-        ((dragging.estimated_minutes || DEFAULT_DURATION) / 60) * HOUR_HEIGHT,
-        28,
-      )
+    ? Math.max((taskDuration(dragging) / 60) * HOUR_HEIGHT, 28)
     : 0;
 
   return (
@@ -893,6 +944,7 @@ export default function Planner() {
                       item={item}
                       onToggle={onToggle}
                       onUnschedule={onUnschedule}
+                      contentRef={contentRef}
                     />
                   ))}
                 </div>
