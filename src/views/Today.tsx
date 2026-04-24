@@ -825,7 +825,7 @@ export default function Planner() {
         >
           <div className="flex-1 flex min-h-0">
             {/* Timeline */}
-            <div ref={timelineRef} className="flex-1 overflow-y-auto">
+            <div ref={timelineRef} className="flex-1 overflow-y-auto pt-2">
               <TimelineDrop contentRef={contentRef} dragId={dragId}>
                 {/* Planning zone backgrounds */}
                 <div className="absolute left-[4.5rem] right-3 top-0 bottom-0 pointer-events-none">
