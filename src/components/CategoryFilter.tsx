@@ -1,6 +1,8 @@
 import { Category } from '../types';
 import Icon from './Icon';
 
+export type CategoryFilterValue = Category | 'uncategorized' | null;
+
 const CATEGORIES: Category[] = ['work', 'personal', 'family', 'health', 'learning'];
 
 const CATEGORY_COLORS: Record<Category, { active: string; dot: string }> = {
@@ -12,14 +14,25 @@ const CATEGORY_COLORS: Record<Category, { active: string; dot: string }> = {
 };
 
 type Props = {
-  value: Category | null;
-  onChange: (value: Category | null) => void;
+  value: CategoryFilterValue;
+  onChange: (value: CategoryFilterValue) => void;
 };
 
 export default function CategoryFilter({ value, onChange }: Props) {
   return (
     <div className="flex items-center gap-1.5">
       <Icon name="filter" size={12} className="text-zinc-500 shrink-0" />
+      <button
+        onClick={() => onChange(value === 'uncategorized' ? null : 'uncategorized')}
+        className={`flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium rounded-full cursor-pointer transition-all duration-200 ${
+          value === 'uncategorized'
+            ? 'bg-zinc-700/80 text-zinc-200 border border-zinc-600 shadow-sm'
+            : 'text-zinc-500 hover:text-zinc-300 hover:bg-surface-raised border border-transparent'
+        }`}
+      >
+        <span className="w-1.5 h-1.5 rounded-full bg-zinc-500" />
+        No category
+      </button>
       {CATEGORIES.map((c) => (
         <button
           key={c}

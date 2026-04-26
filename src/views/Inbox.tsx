@@ -2,17 +2,16 @@ import { useMemo, useRef, useState } from 'react';
 import { useTodos } from '../store/todos';
 import TodoRow from '../components/TodoRow';
 import Icon from '../components/Icon';
-import CategoryFilter from '../components/CategoryFilter';
+import CategoryFilter, { CategoryFilterValue } from '../components/CategoryFilter';
 import { byScore } from '../lib/sort';
 import { useFuzzyFilter } from '../lib/fuzzy';
-import { Category } from '../types';
 
 type Filter = 'all' | 'open' | 'done';
 
 export default function Inbox() {
   const { todos, loading, error, setError } = useTodos();
   const [filter, setFilter] = useState<Filter>('open');
-  const [category, setCategory] = useState<Category | null>(null);
+  const [category, setCategory] = useState<CategoryFilterValue>(null);
   const [search, setSearch] = useState('');
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -20,7 +19,8 @@ export default function Inbox() {
     return todos.filter((t) => {
       if (filter === 'open' && t.is_completed) return false;
       if (filter === 'done' && !t.is_completed) return false;
-      if (category && t.category !== category) return false;
+      if (category === 'uncategorized' && t.category) return false;
+      if (category && category !== 'uncategorized' && t.category !== category) return false;
       return true;
     });
   }, [todos, filter, category]);

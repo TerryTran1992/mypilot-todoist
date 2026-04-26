@@ -2,10 +2,9 @@ import { useMemo, useRef, useState } from 'react';
 import { useTodos } from '../store/todos';
 import TodoRow from '../components/TodoRow';
 import Icon from '../components/Icon';
-import CategoryFilter from '../components/CategoryFilter';
+import CategoryFilter, { CategoryFilterValue } from '../components/CategoryFilter';
 import { byScore } from '../lib/sort';
 import { useFuzzyFilter } from '../lib/fuzzy';
-import { Category } from '../types';
 
 function dayKey(iso: string) {
   return iso.slice(0, 10);
@@ -24,7 +23,7 @@ function formatDay(key: string) {
 
 export default function Completed() {
   const { todos, loading, error, setError } = useTodos();
-  const [category, setCategory] = useState<Category | null>(null);
+  const [category, setCategory] = useState<CategoryFilterValue>(null);
   const [search, setSearch] = useState('');
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -33,7 +32,8 @@ export default function Completed() {
       todos
         .filter((t) => {
           if (!t.is_completed) return false;
-          if (category && t.category !== category) return false;
+          if (category === 'uncategorized' && t.category) return false;
+          if (category && category !== 'uncategorized' && t.category !== category) return false;
           return true;
         })
         .sort((a, b) => (b.completed_at ?? b.created_at).localeCompare(a.completed_at ?? a.created_at)),

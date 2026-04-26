@@ -12,7 +12,7 @@ import {
 } from '@dnd-kit/core';
 import { useTodos, toggleComplete, updateTodo } from '../store/todos';
 import { openTask } from '../store/selection';
-import { Category, EnergyType, Priority, Todo } from '../types';
+import { EnergyType, Priority, Todo } from '../types';
 import {
   Quadrant,
   clearMatrixFor,
@@ -21,7 +21,7 @@ import {
 } from '../lib/local';
 import { useLocalStore } from '../lib/useLocalStore';
 import Icon from '../components/Icon';
-import CategoryFilter from '../components/CategoryFilter';
+import CategoryFilter, { CategoryFilterValue } from '../components/CategoryFilter';
 import SubtaskProgress from '../components/SubtaskProgress';
 import { byScore } from '../lib/sort';
 import { useFuzzyFilter } from '../lib/fuzzy';
@@ -138,13 +138,14 @@ export default function Matrix() {
   const { todos, loading, error, setError } = useTodos();
   const matrix = useLocalStore('mypilot_matrix', getMatrix);
   const [dragId, setDragId] = useState<string | null>(null);
-  const [category, setCategory] = useState<Category | null>(null);
+  const [category, setCategory] = useState<CategoryFilterValue>(null);
   const [search, setSearch] = useState('');
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
   const openTodos = useMemo(() => todos.filter((t) => {
     if (t.is_completed) return false;
-    if (category && t.category !== category) return false;
+    if (category === 'uncategorized' && t.category) return false;
+    if (category && category !== 'uncategorized' && t.category !== category) return false;
     return true;
   }), [todos, category]);
 

@@ -1,9 +1,9 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useTodos, toggleComplete, createTodo, updateTodo } from '../store/todos';
 import { openTask } from '../store/selection';
-import { Category, Todo } from '../types';
+import { Todo } from '../types';
 import Icon from '../components/Icon';
-import CategoryFilter from '../components/CategoryFilter';
+import CategoryFilter, { CategoryFilterValue } from '../components/CategoryFilter';
 import SubtaskProgress from '../components/SubtaskProgress';
 import { useFuzzyFilter } from '../lib/fuzzy';
 
@@ -49,7 +49,7 @@ export default function Upcoming() {
   const tomorrowStr = dateKey(addDays(today, 1));
 
   const [weekStart, setWeekStart] = useState(() => startOfWeek(today));
-  const [category, setCategory] = useState<Category | null>(null);
+  const [category, setCategory] = useState<CategoryFilterValue>(null);
   const [overdueOpen, setOverdueOpen] = useState(true);
   const [addingForDate, setAddingForDate] = useState<string | null>(null);
   const [newTaskTitle, setNewTaskTitle] = useState('');
@@ -67,7 +67,8 @@ export default function Upcoming() {
   const visibleTodos = useMemo(
     () => todos.filter((t) => {
       if (t.is_completed) return false;
-      if (category && t.category !== category) return false;
+      if (category === 'uncategorized' && t.category) return false;
+      if (category && category !== 'uncategorized' && t.category !== category) return false;
       return t.deadline || t.time_block_date || t.recurrence_frequency;
     }),
     [todos, category],
