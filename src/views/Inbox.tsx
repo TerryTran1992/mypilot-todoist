@@ -2,14 +2,17 @@ import { useMemo, useRef, useState } from 'react';
 import { useTodos } from '../store/todos';
 import TodoRow from '../components/TodoRow';
 import Icon from '../components/Icon';
+import CategoryFilter from '../components/CategoryFilter';
 import { byScore } from '../lib/sort';
 import { useFuzzyFilter } from '../lib/fuzzy';
+import { Category } from '../types';
 
 type Filter = 'all' | 'open' | 'done';
 
 export default function Inbox() {
   const { todos, loading, error, setError } = useTodos();
   const [filter, setFilter] = useState<Filter>('open');
+  const [category, setCategory] = useState<Category | null>(null);
   const [search, setSearch] = useState('');
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -17,15 +20,15 @@ export default function Inbox() {
     return todos.filter((t) => {
       if (filter === 'open' && t.is_completed) return false;
       if (filter === 'done' && !t.is_completed) return false;
+      if (category && t.category !== category) return false;
       return true;
     });
-  }, [todos, filter]);
+  }, [todos, filter, category]);
 
   const fuzzyFiltered = useFuzzyFilter(statusFiltered, search, ['title', 'content']);
 
   const visible = useMemo(() => {
     return [...fuzzyFiltered].sort((a, b) => {
-      if (a.is_pinned !== b.is_pinned) return a.is_pinned ? -1 : 1;
       return byScore(a, b);
     });
   }, [fuzzyFiltered]);
@@ -55,6 +58,8 @@ export default function Inbox() {
             {f}
           </button>
         ))}
+        <div className="mx-2 w-px h-5 bg-zinc-800" />
+        <CategoryFilter value={category} onChange={setCategory} />
         <div className="ml-auto relative">
           <Icon name="search" size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
           <input

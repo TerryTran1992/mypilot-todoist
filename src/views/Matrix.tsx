@@ -12,7 +12,7 @@ import {
 } from '@dnd-kit/core';
 import { useTodos, toggleComplete, updateTodo } from '../store/todos';
 import { openTask } from '../store/selection';
-import { EnergyType, Priority, Todo } from '../types';
+import { Category, EnergyType, Priority, Todo } from '../types';
 import {
   Quadrant,
   clearMatrixFor,
@@ -21,6 +21,7 @@ import {
 } from '../lib/local';
 import { useLocalStore } from '../lib/useLocalStore';
 import Icon from '../components/Icon';
+import CategoryFilter from '../components/CategoryFilter';
 import SubtaskProgress from '../components/SubtaskProgress';
 import { byScore } from '../lib/sort';
 import { useFuzzyFilter } from '../lib/fuzzy';
@@ -137,10 +138,15 @@ export default function Matrix() {
   const { todos, loading, error, setError } = useTodos();
   const matrix = useLocalStore('mypilot_matrix', getMatrix);
   const [dragId, setDragId] = useState<string | null>(null);
+  const [category, setCategory] = useState<Category | null>(null);
   const [search, setSearch] = useState('');
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
-  const openTodos = useMemo(() => todos.filter((t) => !t.is_completed), [todos]);
+  const openTodos = useMemo(() => todos.filter((t) => {
+    if (t.is_completed) return false;
+    if (category && t.category !== category) return false;
+    return true;
+  }), [todos, category]);
 
   useMemo(() => {
     const ids = new Set(todos.map((t) => t.id));
@@ -200,21 +206,26 @@ export default function Matrix() {
 
   return (
     <div className="h-full flex flex-col">
-      <header className="flex items-center justify-between px-6 py-4 border-b border-zinc-800/60 gap-4">
-        <div>
-          <h1 className="font-heading text-3xl font-bold text-accent">Eisenhower Matrix</h1>
-          <p className="text-xs text-zinc-500 font-medium mt-0.5">Drag tasks into quadrants to decide priority</p>
+      <header className="px-6 py-4 border-b border-zinc-800/60">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h1 className="font-heading text-3xl font-bold text-accent">Eisenhower Matrix</h1>
+            <p className="text-xs text-zinc-500 font-medium mt-0.5">Drag tasks into quadrants to decide priority</p>
+          </div>
+          <div className="relative shrink-0">
+            <Icon name="search" size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+            <input
+              data-search-input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search tasks…"
+              className="pl-8 pr-3 py-1.5 text-xs bg-surface-raised border border-zinc-800/60 rounded-full focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/20 w-56 transition-all duration-200"
+            />
+          </div>
         </div>
-        <div className="relative shrink-0">
-          <Icon name="search" size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
-          <input
-            data-search-input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search tasks…"
-            className="pl-8 pr-3 py-1.5 text-xs bg-surface-raised border border-zinc-800/60 rounded-full focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/20 w-56 transition-all duration-200"
-          />
+        <div className="mt-3">
+          <CategoryFilter value={category} onChange={setCategory} />
         </div>
       </header>
 

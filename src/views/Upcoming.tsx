@@ -1,8 +1,9 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useTodos, toggleComplete, createTodo, updateTodo } from '../store/todos';
 import { openTask } from '../store/selection';
-import { Todo } from '../types';
+import { Category, Todo } from '../types';
 import Icon from '../components/Icon';
+import CategoryFilter from '../components/CategoryFilter';
 import SubtaskProgress from '../components/SubtaskProgress';
 import { useFuzzyFilter } from '../lib/fuzzy';
 
@@ -48,6 +49,7 @@ export default function Upcoming() {
   const tomorrowStr = dateKey(addDays(today, 1));
 
   const [weekStart, setWeekStart] = useState(() => startOfWeek(today));
+  const [category, setCategory] = useState<Category | null>(null);
   const [overdueOpen, setOverdueOpen] = useState(true);
   const [addingForDate, setAddingForDate] = useState<string | null>(null);
   const [newTaskTitle, setNewTaskTitle] = useState('');
@@ -65,9 +67,10 @@ export default function Upcoming() {
   const visibleTodos = useMemo(
     () => todos.filter((t) => {
       if (t.is_completed) return false;
+      if (category && t.category !== category) return false;
       return t.deadline || t.time_block_date || t.recurrence_frequency;
     }),
-    [todos],
+    [todos, category],
   );
   const filtered = useFuzzyFilter(visibleTodos, search, ['title', 'content']);
 
@@ -251,6 +254,10 @@ export default function Upcoming() {
               )}
             </span>
           )}
+        </div>
+
+        <div className="mt-2.5">
+          <CategoryFilter value={category} onChange={setCategory} />
         </div>
       </header>
 

@@ -48,7 +48,6 @@ function optimisticTodo(input: { title: string; priority?: Todo['priority'] }): 
     title: input.title,
     priority: input.priority ?? 'medium',
     is_completed: false,
-    is_pinned: false,
     created_at: new Date().toISOString(),
     completed_at: null,
     energy_type: null,

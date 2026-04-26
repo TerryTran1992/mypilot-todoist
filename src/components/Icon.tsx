@@ -23,7 +23,8 @@ type IconProps = {
     | 'sparkles'
     | 'external-link'
     | 'calendar-range'
-    | 'repeat';
+    | 'repeat'
+    | 'filter';
   size?: number;
   className?: string;
 };
@@ -222,6 +223,12 @@ export default function Icon({ name, size = 18, className }: IconProps) {
           <path d="M3 11V9a4 4 0 0 1 4-4h14" />
           <polyline points="7 23 3 19 7 15" />
           <path d="M21 13v2a4 4 0 0 1-4 4H3" />
+        </svg>
+      );
+    case 'filter':
+      return (
+        <svg {...common}>
+          <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
         </svg>
       );
   }

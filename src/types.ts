@@ -19,7 +19,6 @@ export type Todo = {
   priority: Priority;
   priority_score?: number;
   is_completed: boolean;
-  is_pinned: boolean;
   created_at: string;
   completed_at?: string | null;
   energy_type?: EnergyType | null;
