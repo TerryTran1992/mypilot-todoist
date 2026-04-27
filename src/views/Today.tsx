@@ -594,8 +594,7 @@ export default function Planner() {
             !otherDayAssigned.has(t.id) &&
             !scheduledIds.has(t.id) &&
             (!!t.estimated_minutes || isDeadlineOnOrBefore(t.deadline, date)) &&
-            !t.time_block_date &&
-            !t.time_block_start,
+            normalizeDate(t.time_block_date) !== date,
         )
         .sort(byScore),
     [todos, assignedIds, otherDayAssigned, scheduledIds, date],
