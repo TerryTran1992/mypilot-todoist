@@ -24,7 +24,9 @@ type IconProps = {
     | 'external-link'
     | 'calendar-range'
     | 'repeat'
-    | 'filter';
+    | 'filter'
+    | 'refresh-cw'
+    | 'loader';
   size?: number;
   className?: string;
 };
@@ -229,6 +231,27 @@ export default function Icon({ name, size = 18, className }: IconProps) {
       return (
         <svg {...common}>
           <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+        </svg>
+      );
+    case 'refresh-cw':
+      return (
+        <svg {...common}>
+          <polyline points="23 4 23 10 17 10" />
+          <polyline points="1 20 1 14 7 14" />
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+        </svg>
+      );
+    case 'loader':
+      return (
+        <svg {...common}>
+          <line x1="12" y1="2" x2="12" y2="6" />
+          <line x1="12" y1="18" x2="12" y2="22" />
+          <line x1="4.93" y1="4.93" x2="7.76" y2="7.76" />
+          <line x1="16.24" y1="16.24" x2="19.07" y2="19.07" />
+          <line x1="2" y1="12" x2="6" y2="12" />
+          <line x1="18" y1="12" x2="22" y2="12" />
+          <line x1="4.93" y1="19.07" x2="7.76" y2="16.24" />
+          <line x1="16.24" y1="7.76" x2="19.07" y2="4.93" />
         </svg>
       );
   }
