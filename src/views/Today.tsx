@@ -126,6 +126,11 @@ function suggestedSlot(minutes: number | null | undefined): Slot {
   return 'small';
 }
 
+function isDeadlineOnOrBefore(deadline: string | null | undefined, dateKey: string): boolean {
+  if (!deadline) return false;
+  return deadline.slice(0, 10) <= dateKey;
+}
+
 function snapMinutes(raw: number): number {
   const snapped = Math.round(raw / SNAP_MINUTES) * SNAP_MINUTES;
   return Math.max(START_HOUR * 60, Math.min((END_HOUR - 1) * 60, snapped));
@@ -588,12 +593,12 @@ export default function Planner() {
             !assignedIds.has(t.id) &&
             !otherDayAssigned.has(t.id) &&
             !scheduledIds.has(t.id) &&
-            !!t.estimated_minutes &&
+            (!!t.estimated_minutes || isDeadlineOnOrBefore(t.deadline, date)) &&
             !t.time_block_date &&
             !t.time_block_start,
         )
         .sort(byScore),
-    [todos, assignedIds, otherDayAssigned, scheduledIds],
+    [todos, assignedIds, otherDayAssigned, scheduledIds, date],
   );
 
   const slotFiltered = useMemo(() => {
@@ -604,8 +609,11 @@ export default function Planner() {
   const pool = useFuzzyFilter(slotFiltered, search, ['title', 'content']);
 
   const unlabeledCount = useMemo(
-    () => todos.filter((t) => !t.is_completed && !t.estimated_minutes).length,
-    [todos],
+    () =>
+      todos.filter(
+        (t) => !t.is_completed && !t.estimated_minutes && !isDeadlineOnOrBefore(t.deadline, date),
+      ).length,
+    [todos, date],
   );
 
   const onToggle = useCallback(
