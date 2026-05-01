@@ -126,11 +126,6 @@ function suggestedSlot(minutes: number | null | undefined): Slot {
   return 'small';
 }
 
-function isDeadlineOnOrBefore(deadline: string | null | undefined, dateKey: string): boolean {
-  if (!deadline) return false;
-  return deadline.slice(0, 10) <= dateKey;
-}
-
 function snapMinutes(raw: number): number {
   const snapped = Math.round(raw / SNAP_MINUTES) * SNAP_MINUTES;
   return Math.max(START_HOUR * 60, Math.min((END_HOUR - 1) * 60, snapped));
@@ -593,7 +588,6 @@ export default function Planner() {
             !assignedIds.has(t.id) &&
             !otherDayAssigned.has(t.id) &&
             !scheduledIds.has(t.id) &&
-            (!!t.estimated_minutes || isDeadlineOnOrBefore(t.deadline, date)) &&
             normalizeDate(t.time_block_date) !== date,
         )
         .sort(byScore),
@@ -607,12 +601,9 @@ export default function Planner() {
 
   const pool = useFuzzyFilter(slotFiltered, search, ['title', 'content']);
 
-  const unlabeledCount = useMemo(
-    () =>
-      todos.filter(
-        (t) => !t.is_completed && !t.estimated_minutes && !isDeadlineOnOrBefore(t.deadline, date),
-      ).length,
-    [todos, date],
+  const unsizedCount = useMemo(
+    () => allLabeledPool.filter((t) => !t.estimated_minutes).length,
+    [allLabeledPool],
   );
 
   const onToggle = useCallback(
@@ -1074,9 +1065,9 @@ export default function Planner() {
                     </button>
                   </div>
                 )}
-                {unlabeledCount > 0 && (
+                {unsizedCount > 0 && (
                   <p className="text-[11px] text-amber-400">
-                    {unlabeledCount} task{unlabeledCount === 1 ? '' : 's'} need sizing —
+                    {unsizedCount} task{unsizedCount === 1 ? '' : 's'} need sizing —
                     open Weekly Review (⌘3).
                   </p>
                 )}
@@ -1086,7 +1077,7 @@ export default function Planner() {
                   <p className="text-xs text-zinc-600 italic">
                     {filterSlot || search
                       ? 'No matches.'
-                      : unlabeledCount > 0
+                      : unsizedCount > 0
                       ? 'Nothing sized. Open Weekly Review (⌘3) to estimate tasks.'
                       : 'All scheduled.'}
                   </p>
