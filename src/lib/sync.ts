@@ -26,10 +26,6 @@ export function enqueue(op: QueueOp) {
   saveQueue(q);
 }
 
-export function queueLength() {
-  return loadQueue().length;
-}
-
 export function isTempId(id: string) {
   return id.startsWith('temp_');
 }
