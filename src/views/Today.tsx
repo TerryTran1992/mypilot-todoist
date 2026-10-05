@@ -564,8 +564,9 @@ export default function Planner() {
     const result: Todo[] = [];
     for (const t of todos) {
       if (!t.time_block_start || t.is_completed) continue;
-      const end = t.time_block_end || (t.estimated_minutes ? minutesToTime(timeToMinutes(t.time_block_start) + t.estimated_minutes) : null);
-      if (!end) continue;
+      // A start time with no end or estimate still belongs on the timeline (default 60 min);
+      // the Unplanned pool excludes tasks dated today, so skipping it here would hide it.
+      const end = t.time_block_end || minutesToTime(timeToMinutes(t.time_block_start) + taskDuration(t));
       const onDate = normalizeDate(t.time_block_date) === date;
       const recurringNoDate = !t.time_block_date && !!t.recurrence_frequency;
       if (onDate || recurringNoDate) {
