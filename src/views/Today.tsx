@@ -16,6 +16,7 @@ import { openTask } from '../store/selection';
 import { EnergyType, Todo } from '../types';
 import { DailyPlan, getPlan, setPlan, todayKey, tomorrowKey } from '../lib/local';
 import { byScore } from '../lib/sort';
+import { scheduleFields, unscheduleFields } from '../lib/taskDate';
 import { useFuzzyFilter } from '../lib/fuzzy';
 import Icon from '../components/Icon';
 import SubtaskProgress from '../components/SubtaskProgress';
@@ -622,13 +623,9 @@ export default function Planner() {
   const onUnschedule = useCallback(
     (id: string) => {
       setLocalPlan(removeFromPlan(id));
-      void updateTodo(id, {
-        time_block_date: null,
-        time_block_start: null,
-        time_block_end: null,
-      });
+      void updateTodo(id, unscheduleFields(byId.get(id)));
     },
-    [plan, date],
+    [plan, date, byId],
   );
 
   const hours = useMemo(() => {
@@ -690,7 +687,7 @@ export default function Planner() {
 
     void updateTodo(todoId, {
       energy_type: meta.energy,
-      time_block_date: date,
+      ...scheduleFields(todo, date),
       time_block_start: startTime,
       time_block_end: minutesToTime(endMins),
     });
@@ -730,7 +727,7 @@ export default function Planner() {
 
           setLocalPlan(removeFromPlan(todoId));
           void updateTodo(todoId, {
-            time_block_date: date,
+            ...scheduleFields(todo, date),
             time_block_start: computedTime,
             time_block_end: minutesToTime(endMins),
           });
@@ -745,11 +742,7 @@ export default function Planner() {
 
     if (target === POOL_ID) {
       setLocalPlan(removeFromPlan(todoId));
-      void updateTodo(todoId, {
-        time_block_date: null,
-        time_block_start: null,
-        time_block_end: null,
-      });
+      void updateTodo(todoId, unscheduleFields(byId.get(todoId)));
       return;
     }
 
@@ -774,7 +767,7 @@ export default function Planner() {
         const endMins = Math.min(startMins + duration, END_HOUR * 60);
         setLocalPlan(removeFromPlan(todoId));
         void updateTodo(todoId, {
-          time_block_date: date,
+          ...scheduleFields(todo, date),
           time_block_start: finalTime,
           time_block_end: minutesToTime(endMins),
         });

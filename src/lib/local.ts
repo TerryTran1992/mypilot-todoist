@@ -24,7 +24,7 @@ function write<T>(key: string, value: T) {
   window.dispatchEvent(new Event(`local:${key}`));
 }
 
-function fmtDateKey(d: Date) {
+export function fmtDateKey(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 

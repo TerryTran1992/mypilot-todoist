@@ -26,6 +26,7 @@ export type Todo = {
   estimated_minutes?: number | null;
   actual_minutes?: number | null;
   deadline?: string | null;
+  deadline_has_time?: boolean | null;
   time_block_date?: string | null;
   time_block_start?: string | null;
   time_block_end?: string | null;

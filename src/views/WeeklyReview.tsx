@@ -5,6 +5,8 @@ import { Todo } from '../types';
 import Icon from '../components/Icon';
 import api from '../lib/api';
 import { useFuzzyFilter } from '../lib/fuzzy';
+import { fmtDateKey } from '../lib/local';
+import { dateFields, taskDate } from '../lib/taskDate';
 
 type Phase = 'clear' | 'current' | 'creative';
 
@@ -48,7 +50,7 @@ export default function WeeklyReview() {
     [todos]
   );
   const unplannedTasks = useMemo(() =>
-    todos.filter(t => !t.is_completed && !t.time_block_date && !t.deadline && !t.parent_id),
+    todos.filter(t => !t.is_completed && !taskDate(t) && !t.parent_id),
     [todos]
   );
   const somedayTasks = useMemo(() =>
@@ -126,7 +128,7 @@ export default function WeeklyReview() {
 
   async function scheduleTodo(id: string) {
     try {
-      await updateTodo(id, { time_block_date: getNextMonday() });
+      await updateTodo(id, dateFields(getNextMonday()));
     } catch {}
   }
 
@@ -671,7 +673,7 @@ function getNextMonday(): string {
   const diff = day === 0 ? 1 : 8 - day;
   const monday = new Date(now);
   monday.setDate(now.getDate() + diff);
-  return monday.toISOString().split('T')[0];
+  return fmtDateKey(monday);
 }
 
 function useDebouncedFn(fn: (...args: any[]) => void, delay: number) {

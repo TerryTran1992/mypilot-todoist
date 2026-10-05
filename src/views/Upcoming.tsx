@@ -6,6 +6,7 @@ import Icon from '../components/Icon';
 import CategoryFilter, { CategoryFilterValue } from '../components/CategoryFilter';
 import SubtaskProgress from '../components/SubtaskProgress';
 import { useFuzzyFilter } from '../lib/fuzzy';
+import { dateFields, deadlineDay, taskDate } from '../lib/taskDate';
 
 function startOfWeek(date: Date): Date {
   const d = new Date(date);
@@ -72,7 +73,7 @@ export default function Upcoming() {
       if (t.is_completed) return false;
       if (category === 'uncategorized' && t.category) return false;
       if (category && category !== 'uncategorized' && t.category !== category) return false;
-      return t.deadline || t.time_block_date || t.recurrence_frequency;
+      return taskDate(t) || t.recurrence_frequency;
     }),
     [todos, category],
   );
@@ -82,7 +83,7 @@ export default function Upcoming() {
     const map = new Map<string, Todo[]>();
     for (const t of filtered) {
       if (t.is_completed) continue;
-      let ds = t.deadline?.slice(0, 10) || t.time_block_date?.slice(0, 10);
+      let ds = taskDate(t);
       if (!ds && t.recurrence_frequency) {
         ds = todayStr;
       }
@@ -99,10 +100,10 @@ export default function Upcoming() {
       filtered
         .filter((t) => {
           if (t.is_completed) return false;
-          const ds = t.deadline?.slice(0, 10);
+          const ds = taskDate(t);
           return ds ? ds < todayStr : false;
         })
-        .sort((a, b) => (a.deadline || '').localeCompare(b.deadline || '')),
+        .sort((a, b) => (taskDate(a) || '').localeCompare(taskDate(b) || '')),
     [filtered, todayStr],
   );
 
@@ -132,7 +133,7 @@ export default function Upcoming() {
     if (!title) return;
     try {
       const task = await createTodo({ title });
-      await updateTodo(task.id, { deadline: dateStr + 'T00:00:00.000Z' });
+      await updateTodo(task.id, dateFields(dateStr));
       setNewTaskTitle('');
       setAddingForDate(null);
     } catch (err) {
@@ -150,16 +151,15 @@ export default function Upcoming() {
   }
 
   function formatOverdueDate(t: Todo): string {
-    if (!t.deadline) return '';
-    const d = new Date(t.deadline);
-    const day = d.getDate();
-    const month = d.toLocaleDateString(undefined, { month: 'short' });
-    const hasTime = t.deadline.includes('T') && !t.deadline.endsWith('T00:00:00.000Z');
-    if (hasTime) {
-      const time = d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
-      return `${day} ${month} ${time}`;
+    const ds = taskDate(t);
+    if (!ds) return '';
+    const d = new Date(ds + 'T00:00:00');
+    const label = `${d.getDate()} ${d.toLocaleDateString(undefined, { month: 'short' })}`;
+    if (t.deadline && t.deadline_has_time && deadlineDay(t) === ds) {
+      const time = new Date(t.deadline).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+      return `${label} ${time}`;
     }
-    return `${day} ${month}`;
+    return label;
   }
 
   return (

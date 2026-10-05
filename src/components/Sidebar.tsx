@@ -1,4 +1,6 @@
 import { useTodos } from '../store/todos';
+import { fmtDateKey, todayKey } from '../lib/local';
+import { taskDate } from '../lib/taskDate';
 import Icon from './Icon';
 
 export type View = 'brain' | 'today' | 'upcoming' | 'review' | 'matrix' | 'delegation' | 'inbox' | 'completed';
@@ -36,15 +38,13 @@ export default function Sidebar({
   const inboxCount = todos.filter((t) => !t.is_completed).length;
   const doneCount = todos.filter((t) => t.is_completed).length;
 
-  const today = new Date().toISOString().slice(0, 10);
-  const todayCount = todos.filter(
-    (t) => !t.is_completed && t.time_block_date?.slice(0, 10) === today,
-  ).length;
+  const today = todayKey();
+  const todayCount = todos.filter((t) => !t.is_completed && taskDate(t) === today).length;
 
-  const next7 = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
+  const next7 = fmtDateKey(new Date(Date.now() + 7 * 86400000));
   const upcomingCount = todos.filter((t) => {
     if (t.is_completed) return false;
-    const d = t.deadline?.slice(0, 10) || t.time_block_date?.slice(0, 10);
+    const d = taskDate(t);
     return d ? d >= today && d <= next7 : false;
   }).length;
 

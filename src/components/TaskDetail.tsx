@@ -11,6 +11,7 @@ import {
 import api, { ApiError, NetworkError } from '../lib/api';
 import { isTempId } from '../lib/sync';
 import { todayKey } from '../lib/local';
+import { dateFields, scheduleFields, setDateFields, taskDate, unscheduleFields } from '../lib/taskDate';
 import { Category, DelegationStatus, EnergyType, Priority, RecurrenceFrequency, RecurrenceUnit, Todo, TodoComment } from '../types';
 import Icon from './Icon';
 import SubtaskList from './SubtaskList';
@@ -70,11 +71,6 @@ function fmtDateTime(iso?: string | null) {
 function isoToDateInput(iso?: string | null) {
   if (!iso) return '';
   return iso.slice(0, 10);
-}
-
-function dateInputToIso(value: string) {
-  if (!value) return null;
-  return new Date(value + 'T23:59:59').toISOString();
 }
 
 export default function TaskDetail() {
@@ -390,30 +386,14 @@ function Body({
         )}
 
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Deadline">
+          <Field label="Date">
             <input
               type="date"
-              value={isoToDateInput(todo.deadline)}
-              onChange={(e) => patch({ deadline: dateInputToIso(e.target.value) })}
+              value={taskDate(todo) ?? ''}
+              onChange={(e) => patch(setDateFields(todo, e.target.value || null))}
               className="w-full bg-surface-raised border border-zinc-800/60 rounded-lg px-2 py-1.5 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/20 [color-scheme:dark] transition-all duration-200"
             />
           </Field>
-          <Field label="Scheduled">
-            <input
-              type="date"
-              title="The day this task sits on the Today timeline"
-              value={isoToDateInput(todo.time_block_date)}
-              onChange={(e) => {
-                const v = e.target.value || null;
-                // Clearing the day unschedules the task, same as clearing Start time.
-                patch(v ? { time_block_date: v } : { time_block_date: null, time_block_start: null, time_block_end: null });
-              }}
-              className="w-full bg-surface-raised border border-zinc-800/60 rounded-lg px-2 py-1.5 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/20 [color-scheme:dark] transition-all duration-200"
-            />
-          </Field>
-        </div>
-
-        <div className="grid grid-cols-3 gap-3">
           <Field label="Estimate (min)">
             <input
               type="number"
@@ -430,23 +410,26 @@ function Body({
               className="w-full bg-surface-raised border border-zinc-800/60 rounded-lg px-2 py-1.5 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/20 transition-all duration-200"
             />
           </Field>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
           <Field label="Start time">
             <input
               type="time"
               value={todo.time_block_start ?? ''}
               onChange={(e) => {
                 const v = e.target.value || null;
-                const updates: Partial<Todo> = { time_block_start: v } as Partial<Todo>;
-                if (v) {
-                  if (!todo.time_block_date) {
-                    (updates as any).time_block_date = todayKey();
-                  }
-                  if (todo.estimated_minutes) {
-                    (updates as any).time_block_end = addMinutesToTime(v, todo.estimated_minutes);
-                  }
-                } else {
-                  (updates as any).time_block_date = null;
-                  (updates as any).time_block_end = null;
+                if (!v) {
+                  patch(unscheduleFields(todo));
+                  return;
+                }
+                // A time with no date means today.
+                const updates: Partial<Todo> = {
+                  ...scheduleFields(todo, taskDate(todo) ?? todayKey()),
+                  time_block_start: v,
+                };
+                if (todo.estimated_minutes) {
+                  updates.time_block_end = addMinutesToTime(v, todo.estimated_minutes);
                 }
                 patch(updates);
               }}
@@ -494,7 +477,9 @@ function Body({
                       updates.recurrence_unit = null;
                     }
                     if (!todo.deadline) {
-                      updates.deadline = new Date().toISOString();
+                      // The recurring-tasks job counts repeats from the deadline.
+                      const { deadline, deadline_has_time } = dateFields(taskDate(todo) ?? todayKey());
+                      Object.assign(updates, { deadline, deadline_has_time });
                     }
                     patch(updates);
                   }
@@ -617,8 +602,8 @@ function Body({
           {todo.time_block_start && (
             <p>
               <Icon name="calendar" size={11} className="inline mr-1" />
-              {todo.time_block_date &&
-                `${new Date(isoToDateInput(todo.time_block_date) + 'T00:00:00').toLocaleDateString(undefined, { dateStyle: 'medium' })} · `}
+              {taskDate(todo) &&
+                `${new Date(taskDate(todo) + 'T00:00:00').toLocaleDateString(undefined, { dateStyle: 'medium' })} · `}
               {todo.time_block_start}
               {(todo.time_block_end || (todo.estimated_minutes ? addMinutesToTime(todo.time_block_start, todo.estimated_minutes) : null)) &&
                 ` – ${todo.time_block_end || addMinutesToTime(todo.time_block_start, todo.estimated_minutes!)}`}

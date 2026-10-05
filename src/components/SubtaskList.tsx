@@ -16,6 +16,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Todo } from '../types';
+import { dateFields, taskDate } from '../lib/taskDate';
 import {
   useSubtasks,
   createSubtask,
@@ -84,9 +85,9 @@ function SortableRow({
           {sub.category && (
             <span className="text-[9px] px-1 py-0.5 rounded bg-zinc-800 text-zinc-400 capitalize">{sub.category}</span>
           )}
-          {sub.deadline && (
+          {taskDate(sub) && (
             <span className="text-[9px] px-1 py-0.5 rounded bg-zinc-800 text-zinc-400">
-              {new Date(sub.deadline).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+              {new Date(taskDate(sub) + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
             </span>
           )}
         </div>
@@ -153,7 +154,7 @@ export default function SubtaskList({
       priority: parentTodo.priority,
       category: parentTodo.category,
       energy_type: parentTodo.energy_type,
-      deadline: parentTodo.deadline,
+      deadline: dateFields(taskDate(parentTodo)).deadline,
     });
     inputRef.current?.focus();
   }
