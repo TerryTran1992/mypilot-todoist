@@ -10,6 +10,7 @@ import {
 } from '../store/subtasks';
 import api, { ApiError, NetworkError } from '../lib/api';
 import { isTempId } from '../lib/sync';
+import { todayKey } from '../lib/local';
 import { Category, DelegationStatus, EnergyType, Priority, RecurrenceFrequency, RecurrenceUnit, Todo, TodoComment } from '../types';
 import Icon from './Icon';
 import SubtaskList from './SubtaskList';
@@ -397,6 +398,22 @@ function Body({
               className="w-full bg-surface-raised border border-zinc-800/60 rounded-lg px-2 py-1.5 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/20 [color-scheme:dark] transition-all duration-200"
             />
           </Field>
+          <Field label="Scheduled">
+            <input
+              type="date"
+              title="The day this task sits on the Today timeline"
+              value={isoToDateInput(todo.time_block_date)}
+              onChange={(e) => {
+                const v = e.target.value || null;
+                // Clearing the day unschedules the task, same as clearing Start time.
+                patch(v ? { time_block_date: v } : { time_block_date: null, time_block_start: null, time_block_end: null });
+              }}
+              className="w-full bg-surface-raised border border-zinc-800/60 rounded-lg px-2 py-1.5 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/20 [color-scheme:dark] transition-all duration-200"
+            />
+          </Field>
+        </div>
+
+        <div className="grid grid-cols-3 gap-3">
           <Field label="Estimate (min)">
             <input
               type="number"
@@ -413,9 +430,6 @@ function Body({
               className="w-full bg-surface-raised border border-zinc-800/60 rounded-lg px-2 py-1.5 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/20 transition-all duration-200"
             />
           </Field>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
           <Field label="Start time">
             <input
               type="time"
@@ -425,7 +439,7 @@ function Body({
                 const updates: Partial<Todo> = { time_block_start: v } as Partial<Todo>;
                 if (v) {
                   if (!todo.time_block_date) {
-                    (updates as any).time_block_date = new Date().toISOString().slice(0, 10);
+                    (updates as any).time_block_date = todayKey();
                   }
                   if (todo.estimated_minutes) {
                     (updates as any).time_block_end = addMinutesToTime(v, todo.estimated_minutes);
@@ -603,6 +617,8 @@ function Body({
           {todo.time_block_start && (
             <p>
               <Icon name="calendar" size={11} className="inline mr-1" />
+              {todo.time_block_date &&
+                `${new Date(isoToDateInput(todo.time_block_date) + 'T00:00:00').toLocaleDateString(undefined, { dateStyle: 'medium' })} · `}
               {todo.time_block_start}
               {(todo.time_block_end || (todo.estimated_minutes ? addMinutesToTime(todo.time_block_start, todo.estimated_minutes) : null)) &&
                 ` – ${todo.time_block_end || addMinutesToTime(todo.time_block_start, todo.estimated_minutes!)}`}

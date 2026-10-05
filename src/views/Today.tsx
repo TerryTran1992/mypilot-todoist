@@ -588,11 +588,12 @@ export default function Planner() {
             !t.is_completed &&
             !assignedIds.has(t.id) &&
             !otherDayAssigned.has(t.id) &&
-            !scheduledIds.has(t.id) &&
-            normalizeDate(t.time_block_date) !== date,
+            // Anything not on the timeline lands here, even if dated today without a time —
+            // excluding those by date made them vanish from both lists.
+            !scheduledIds.has(t.id),
         )
         .sort(byScore),
-    [todos, assignedIds, otherDayAssigned, scheduledIds, date],
+    [todos, assignedIds, otherDayAssigned, scheduledIds],
   );
 
   const slotFiltered = useMemo(() => {
